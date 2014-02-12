@@ -9,6 +9,8 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     source("TPME_Sample_Token_Topic_Assignments.R")
     source("TPME_Sample_Edge_Topic_Assignments.R")
+    source("TPME_Sample_Author_Topic_Latent_Space.R")
+    source("TPME_Sample_Topic_Latent_Space_Intercept.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
@@ -91,14 +93,14 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         #4. Sample latent positions for each actor and topic
         for(t in 1:Number_Of_Topics){
             for(a in 1:Number_Of_Authors){ #Author_Attributes is a matrix with one row per author and one column per attribute
-                Latent_Space_Positions[[a]][[1]][,t] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC()
+                Latent_Space_Positions[[a]][[1]][,t] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions[[a]][[1]][,t],Latent_Space_Intercepts,Latent_Dimensions,a,Document_Edge_Matrix)
                 
             }
         }
         
         #5. Sample new intercept for current topic
         for(t in 1:Number_Of_Topics){
-            
+            Latent_Space_Intercepts <- SAMPLE_NEW_INTERCEPT_FOR_CURRENT_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Edge_Matrix,t)
         }
         
         
