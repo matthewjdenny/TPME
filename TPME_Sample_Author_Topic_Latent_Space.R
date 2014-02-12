@@ -1,0 +1,9 @@
+# script that defines SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC
+
+SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC <- function(){
+    
+    
+    
+    
+    
+}

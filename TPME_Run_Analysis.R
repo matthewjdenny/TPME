@@ -8,6 +8,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     source("TPME_Sample_Token_Topic_Assignments.R")
+    source("TPME_Sample_Edge_Topic_Assignments.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
@@ -19,10 +20,16 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     
     Number_Of_Authors <- length(Author_Attributes[,1]) 
     
-    Beta <- Base_Beta*length(Vocabulary)
+    Number_Of_Words <- length(Vocabulary) #the number of unique words in the corpus
+    
+    Beta <- Base_Beta*Number_Of_Words 
     
     #we define alpha to be a vector so that it can accomodate an asymmetric base measure in the future
     Alpha_Base_Measure_Vector <- rep((Base_Alpha/Number_Of_Topics,Number_Of_Topics)
+                                     
+    Document_Authors <- Document_Edge_Matrix[,1] #make a vector of document authors
+    
+    Document_Edge_Matrix <- Document_Edge_Matrix[,-1] # remove the authors from the docuemnt edge matrix
     
     #token topic assignemnts are stores in a list of vectors data structure
     Token_Topic_Assignments <- list()
@@ -44,6 +51,15 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         Latent_Space_Positions <- append(Latent_Space_Positions,list(latent_space_positions))
     }
     
+    #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
+    Edge_Topic_Assignments <- Document_Edge_Matrix #jsut assing it so we get the right dimensions
+    #now go in and replace all ones with a sampled edge topic assignment
+    for(d in 1:Number_Of_Documents){
+        for(a in 1:Number_Of_Authors){
+                Edge_Topic_Assignments[d,] <- sample(1:Number_Of_Topics,Number_Of_Authors,replace= TRUE) #give it a topic edge assignment value
+        }
+    }
+    
                                   
     #==================== MAIN LOOP OVER NUMER OF ITTERATIONS ====================#                              
     for(i in 1:Number_Of_Iterations){
@@ -58,7 +74,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         #2. Sample token topic assignments
         for(d in 1:Number_Of_Documents){
             if(sum(Document_Word_Matrix[d,]) > 0){ #if there is atleast one token in the document
-                Token_Topic_Assignments[[d]][[1]] <- SAMPLE_TOKEN_TOPIC_ASSIGNMENTS(Token_Topic_Assignments[[d]][[1]],Number_Of_Topics,Number_Of_Authors,Alpha_Base_Measure_Vector, Beta)
+                Token_Topic_Assignments[[d]][[1]] <- SAMPLE_TOKEN_TOPIC_ASSIGNMENTS(Token_Topic_Assignments[[d]][[1]],Number_Of_Topics,Number_Of_Authors,Alpha_Base_Measure_Vector,Beta,Number_Of_Words,Edge_Topic_Assignments[d,],Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Authors[d],Document_Edge_Matrix)
             }else{ #assign the docuemnt a dummy word and dummy topic
                 
             }
@@ -68,14 +84,14 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         
         #3. Sample document edge assingments 
         for(d in 1:Number_Of_Documents){
-            
+            Edge_Topic_Assignments[d,] <- SAMPLE_DOCUMENT_EDGE_ASSIGNMENTS(Edge_Topic_Assignments[d,],Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Authors[d],Document_Edge_Matrix,sum(Document_Word_Matrix[d,]))
             
         }
         
         #4. Sample latent positions for each actor and topic
         for(t in 1:Number_Of_Topics){
             for(a in 1:Number_Of_Authors){ #Author_Attributes is a matrix with one row per author and one column per attribute
-                
+                Latent_Space_Positions[[a]][[1]][,t] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC()
                 
             }
         }
