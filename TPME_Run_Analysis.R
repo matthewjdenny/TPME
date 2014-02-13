@@ -43,15 +43,22 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     }
     
     #sample latent space postions for each actor for each topic from a uniform distribution. This will be a list of matricies data structure with rows in each matrix being the latent dimensions and columns being each topic 
-    Latent_Space_Positions <- list()
+    Latent_Space_Positions <- array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
     for(a in 1:Number_Of_Authors){ 
-        latent_space_positions <- matrix(0,nrow = Latent_Dimensions, ncol = Number_Of_Topics)
+        latent_space_positions[,,a] <- matrix(0,nrow = Latent_Dimensions, ncol = Number_Of_Topics)
         for(s in 1:Latent_Dimensions){
-            latent_space_positions[s,] <- runif(Number_Of_Topics, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
+            latent_space_positions[s,,a] <- runif(Number_Of_Topics, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
         }
         #now add to the list object
         Latent_Space_Positions <- append(Latent_Space_Positions,list(latent_space_positions))
     }
+    
+    #store current edge log probabiltiy assingments. This is an authors by authors matrix for each topic with two extra dimensions (one vector for each person's latent position vector so we can check to see if they need calculating again., there is one additional space at the end of the row which holds the intercept) 
+    Current_Edge_Log_Probability <- array(0,c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors,Latent_Dimensions +1,2))
+    
+    #store proposed edge log probabiltiy assingments. This is an authors by authors matrix for each topic with two extra dimensions (one vector for each person's latent position vector so we can check to see if they need calculating again., there is one additional space at the end of the row which holds the intercept) 
+    Proposed_Edge_Log_Probability <- array(0,c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors,Latent_Dimensions+ 1,2))
+    
     
     #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
     Edge_Topic_Assignments <- Document_Edge_Matrix #jsut assing it so we get the right dimensions
@@ -93,7 +100,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         #4. Sample latent positions for each actor and topic
         for(t in 1:Number_Of_Topics){
             for(a in 1:Number_Of_Authors){ #Author_Attributes is a matrix with one row per author and one column per attribute
-                Latent_Space_Positions[[a]][[1]][,t] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions[[a]][[1]][,t],Latent_Space_Intercepts,Latent_Dimensions,a,Document_Edge_Matrix)
+                Latent_Space_Positions[,t,a] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions[,t,a],Latent_Space_Intercepts,Latent_Dimensions,a,Document_Edge_Matrix)
                 
             }
         }
