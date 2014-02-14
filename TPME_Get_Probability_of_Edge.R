@@ -1,7 +1,3 @@
-#implement Gibbs Sampling in Rcpp for an 18-20x speedup over the straight R script.
-
-#alpha, the current token index, the maximum toke index reached already, current token number, the vector of token probabilities in each topic, the topic assignments already.
-
 
 library(Rcpp)
 
@@ -40,39 +36,38 @@ cppFunction('
 
 
 
-Log_Probability_Of_Edge <- function(topic,author,recipient,for_new_intercept = F){
+Log_Probability_Of_Edge <- function(topic,author,recipient,edge_present,for_new_intercept = 0){
     
     #get the current information on latent positions and edge log likelihood -- we will need this regardless
-    stored_author_position <- Proposed_Edge_Log_Probability[topic,author,recipient,,1]
-    stored_author_position <- stored_author_position[-length(stored_author_position)]
-    
-    stored_recipient_position <- Proposed_Edge_Log_Probability[topic,author,recipient,,2]
-    stored_recipient_position <- stored_recipient_position[-length(stored_recipient_position)]
-    
-    stored_intercept <- tail(Proposed_Edge_Log_Probability[topic,author,recipient,-1,2],1)
+    stored_author_position <- Current_Edge_Information[topic,author,recipient][[1]]
+    stored_recipient_position <- Current_Edge_Information[topic,author,recipient][[2]]
+    stored_intercept <- Current_Edge_Information[topic,author,recipient][[3]]
     
     #if for_new_intercept is true, then we know we have to calculate the probability regardless of the latent postions so we jsut jump right to that. If not, then we need to check
     
-    if(for_new_intercept){
-        #just calculate porbability of edge
-        log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(length(stored_author_position),1, 1.234,c(1.7,.36,-.89),c(2,-1,-.5))
+    if(for_new_intercept == 1){
+        #just calculate porbability of edge using the cached values for 
+        log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[topic,author,recipient][[6]],edge_present, Latent_Space_Intercepts[topic],stored_author_position,stored_recipient_position)
+    }else{
+        #get author and recipeint current latent positons
+        proposed_author_LS_position <- Latent_Space_Positions[,topic,author]
+        proposed_recipient_LS_position <- Latent_Space_Positions[,topic,recipient]
         
-    }
+        #check them against the latent postions associtated with the edge likelihood stored in the Current_Edge_Log_Probability array. If they are the same, then just return that value, otherwise, go ahead and calculate the value. 
+        if(identical(stored_author_position,proposed_author_LS_position) & identical(stored_recipient_position,proposed_recipient_LS_position) & stored_intercept == Latent_Space_Intercepts[topic]){
+            #if everything is the same jsut check to see if the y value is the same and if it is not, then calculate its reciprocal
+            if(edge_present == Current_Edge_Information[topic,author,recipient][[4]]){
+                log_prob_of_edge <- Current_Edge_Information[topic,author,recipient][[5]]
+            }else{
+                log_prob_of_edge <- 1- exp(Current_Edge_Information[topic,author,recipient][[5]])
+            }
+            
+        }else{ #if the stored values are not the same as the input values then we have to calculate
+            log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[topic,author,recipient][[6]],edge_present, Latent_Space_Intercepts[topic],proposed_author_LS_position,proposed_recipient_LS_position)
+        }
+        
+        
+    }#end else statement if we are not just checking for a new intercept where we know we have to check
     
-    #get author and recipeint current latent positons
-    
-    
-    #check them against the latent postions associtated with the edge likelihood stored in the Current_Edge_Log_Probability array. If they are the same, then just return that value, otherwise, go ahead and calculate the value.  
-    
-    Latent_Space_Positions
-    
-    
-    
-    Current_Edge_Log_Probability
-    
-    Log_Porbability_Of_Edge_Cpp(2,1, 1.234,c(1.7,.36,-.89),c(2,-1,-.5))
-    
-    test <- array(0,c(2,2,2,2))
-    tes
-    
+  return log_prob_of_edge;
 }

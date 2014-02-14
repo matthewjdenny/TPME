@@ -11,6 +11,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     source("TPME_Sample_Edge_Topic_Assignments.R")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
     source("TPME_Sample_Topic_Latent_Space_Intercept.R")
+    source("TPME_Get_Probability_of_Edge.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
@@ -53,12 +54,13 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         Latent_Space_Positions <- append(Latent_Space_Positions,list(latent_space_positions))
     }
     
-    #store current edge log probabiltiy assingments. This is an authors by authors matrix for each topic with two extra dimensions (one vector for each person's latent position vector so we can check to see if they need calculating again., there is one additional space at the end of the row which holds the intercept) 
-    Current_Edge_Log_Probability <- array(0,c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors,Latent_Dimensions +1,2))
+    #store information about current edge log likelihoods. This is an author by author by number of topics array of lists of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
+    Current_Edge_Information <- array(list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions),c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors)
     
-    #store proposed edge log probabiltiy assingments. This is an authors by authors matrix for each topic with two extra dimensions (one vector for each person's latent position vector so we can check to see if they need calculating again., there is one additional space at the end of the row which holds the intercept) 
-    Proposed_Edge_Log_Probability <- array(0,c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors,Latent_Dimensions+ 1,2))
+    #store information about proposed edge log likelihoods. This is an author by author by number of topics array of lists of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)), edge log likelihood anmd number of latent dimensions for convenience.
+    Proposed_Edge_Information <- array(list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions),c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors)
     
+            
     
     #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
     Edge_Topic_Assignments <- Document_Edge_Matrix #jsut assing it so we get the right dimensions
