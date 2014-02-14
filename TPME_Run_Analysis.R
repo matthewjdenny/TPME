@@ -8,10 +8,11 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     source("TPME_Sample_Token_Topic_Assignments.R")
-    source("TPME_Sample_Edge_Topic_Assignments.R")
+    source("TPME_Sample_Edge_Topic_Assignments.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
     source("TPME_Sample_Topic_Latent_Space_Intercept.R")
     source("TPME_Get_Probability_of_Edge.R")
+    source("TPME_R_Get_Wrapper_Functions.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
