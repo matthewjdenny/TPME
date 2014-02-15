@@ -64,7 +64,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
             
     
     #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
-    Edge_Topic_Assignments <- Document_Edge_Matrix #jsut assing it so we get the right dimensions
+    Edge_Topic_Assignments <- Document_Edge_Matrix #jsut copying it so we get the right dimensions
     #now go in and replace all ones with a sampled edge topic assignment
     for(d in 1:Number_Of_Documents){
         for(a in 1:Number_Of_Authors){

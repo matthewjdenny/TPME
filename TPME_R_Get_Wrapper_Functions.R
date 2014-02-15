@@ -11,3 +11,7 @@ get_observed_edge_value <- function(document,recipient){
 get_token_topic_assignment <- function(document,token){
     return(Token_Topic_Assignments[[document][[token]]])
 }
+
+get_edge_topic_assignment <- function(document,recipient){
+    return(Edge_Topic_Assignments[document,recipient])
+}
