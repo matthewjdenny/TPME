@@ -42,22 +42,22 @@ Log_Probability_Of_Edge <- function(topic,author,recipient,edge_present,for_new_
     
     #if we know its a new value, then 
     if(proposal == 1){
-        proposed_author_position <- Proposed_Edge_Information[topic,author,recipient][[1]]
-        proposed_recipient_position <- Proposed_Edge_Information[topic,author,recipient][[2]]
+        proposed_author_position <- Proposed_Edge_Information[[topic]][[author]][[recipient]][[1]]
+        proposed_recipient_position <- Proposed_Edge_Information[[topic]][[author]][[recipient]][[2]]
         
         #just calculate porbability of edge using the cached values for 
-        log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[topic,author,recipient][[6]],edge_present, Latent_Space_Intercepts[topic],proposed_author_position,proposed_recipient_position)
+        log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[[topic]][[author]][[recipient]][[6]],edge_present, Latent_Space_Intercepts[topic],proposed_author_position,proposed_recipient_position)
     }else{
         #get the current information on latent positions and edge log likelihood -- we will need this regardless
-        stored_author_position <- Current_Edge_Information[topic,author,recipient][[1]]
-        stored_recipient_position <- Current_Edge_Information[topic,author,recipient][[2]]
-        stored_intercept <- Current_Edge_Information[topic,author,recipient][[3]]
+        stored_author_position <- Current_Edge_Information[[topic]][[author]][[recipient]][[1]]
+        stored_recipient_position <- Current_Edge_Information[[topic]][[author]][[recipient]][[2]]
+        stored_intercept <- Current_Edge_Information[[topic]][[author]][[recipient]][[3]]
         
         #if for_new_intercept is true, then we know we have to calculate the probability regardless of the latent postions so we jsut jump right to that. If not, then we need to check
         
         if(for_new_intercept == 1){
             #just calculate porbability of edge using the cached values for 
-            log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[topic,author,recipient][[6]],edge_present, Latent_Space_Intercepts[topic],stored_author_position,stored_recipient_position)
+            log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[[topic]][[author]][[recipient]][[6]],edge_present, Latent_Space_Intercepts[topic],stored_author_position,stored_recipient_position)
         }else{
             #get author and recipeint current latent positons
             proposed_author_LS_position <- Latent_Space_Positions[,topic,author]
@@ -66,14 +66,14 @@ Log_Probability_Of_Edge <- function(topic,author,recipient,edge_present,for_new_
             #check them against the latent postions associtated with the edge likelihood stored in the Current_Edge_Log_Probability array. If they are the same, then just return that value, otherwise, go ahead and calculate the value. 
             if(identical(stored_author_position,proposed_author_LS_position) & identical(stored_recipient_position,proposed_recipient_LS_position) & stored_intercept == Latent_Space_Intercepts[topic]){
                 #if everything is the same jsut check to see if the y value is the same and if it is not, then calculate its reciprocal
-                if(edge_present == Current_Edge_Information[topic,author,recipient][[4]]){
-                    log_prob_of_edge <- Current_Edge_Information[topic,author,recipient][[5]]
+                if(edge_present == Current_Edge_Information[[topic]][[author]][[recipient]][[4]]){
+                    log_prob_of_edge <- Current_Edge_Information[[topic]][[author]][[recipient]][[5]]
                 }else{
-                    log_prob_of_edge <- 1- exp(Current_Edge_Information[topic,author,recipient][[5]])
+                    log_prob_of_edge <- 1- exp(Current_Edge_Information[[topic]][[author]][[recipient]][[5]])
                 }
                 
             }else{ #if the stored values are not the same as the input values then we have to calculate
-                log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[topic,author,recipient][[6]],edge_present, Latent_Space_Intercepts[topic],proposed_author_LS_position,proposed_recipient_LS_position)
+                log_prob_of_edge <- Log_Porbability_Of_Edge_Cpp(Current_Edge_Information[[topic]][[author]][[recipient]][[6]],edge_present, Latent_Space_Intercepts[topic],proposed_author_LS_position,proposed_recipient_LS_position)
             }
             
             

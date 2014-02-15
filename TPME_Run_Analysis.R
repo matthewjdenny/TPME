@@ -3,11 +3,28 @@
 # local variables are not capitalized
 # user defined functions are in all caps
 
+#======== TESTING =========#
+rm(list = ls())
+Number_Of_Iterations = 1
+Base_Alpha =1
+Base_Beta = 0.01
+Number_Of_Topics = 10
+Author_Attributes = matrix(1:17,ncol =2,nrow =17)
+Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
+Document_Edge_Matrix = Document_Edge_Matrix[,-1] 
+Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Test_Word_Matrix.csv", header= F, stringsAsFactors = F)
+Document_Word_Matrix = Document_Word_Matrix[,-1]
+Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
+Latent_Dimensions = 2
+
+#==========================#
+
+
 Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes, Document_Edge_Matrix ,Document_Word_Matrix, Vocabulary, Latent_Dimensions){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
-    source("TPME_Sample_Token_Topic_Assignments.R")
+    source("TPME_Sample_Token_Topic_Assignments.cpp")
     source("TPME_Sample_Edge_Topic_Assignments.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
     source("TPME_Sample_Topic_Latent_Space_Intercept.R")
@@ -29,7 +46,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     Beta <- Base_Beta*Number_Of_Words 
     
     #we define alpha to be a vector so that it can accomodate an asymmetric base measure in the future
-    Alpha_Base_Measure_Vector <- rep((Base_Alpha/Number_Of_Topics,Number_Of_Topics)
+    Alpha_Base_Measure_Vector <- rep(Base_Alpha/Number_Of_Topics,Number_Of_Topics)
                                      
     Document_Authors <- Document_Edge_Matrix[,1] #make a vector of document authors
     
@@ -47,22 +64,29 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     #sample latent space postions for each actor for each topic from a uniform distribution. This will be a list of matricies data structure with rows in each matrix being the latent dimensions and columns being each topic 
     Latent_Space_Positions <- array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
     for(a in 1:Number_Of_Authors){ 
-        latent_space_positions[,,a] <- matrix(0,nrow = Latent_Dimensions, ncol = Number_Of_Topics)
+        Latent_Space_Positions[,,a] <- matrix(0,nrow = Latent_Dimensions, ncol = Number_Of_Topics)
         for(s in 1:Latent_Dimensions){
-            latent_space_positions[s,,a] <- runif(Number_Of_Topics, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
+            Latent_Space_Positions[s,,a] <- runif(Number_Of_Topics, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
         }
-        #now add to the list object
-        Latent_Space_Positions <- append(Latent_Space_Positions,list(latent_space_positions))
+        
     }
     
-    #store information about current edge log likelihoods. This is an author by author by number of topics array of lists of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
-    Current_Edge_Information <- array(list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions),c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors)
-    
-    #store information about proposed edge log likelihoods. This is an author by author by number of topics array of lists of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)), edge log likelihood anmd number of latent dimensions for convenience.
-    Proposed_Edge_Information <- array(list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions),c(Number_Of_Topics,Number_Of_Authors,Number_Of_Authors)
-    
-            
-    
+    #store information about current edge log likelihoods. This is a number of topics to number of authors to number of recipients list of lists containing a list of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
+   test <-   list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions)       
+    test2 <- list()
+   for(i in 1:Number_Of_Authors){
+       test2 = append(test2,list(test))
+   }
+   test3 <- list()
+   for(i in 1:Number_Of_Authors){
+       test3 = append(test3,list(test2))
+   }
+   test4 <- list()
+   for(i in 1:Number_Of_Topics){
+       test4 = append(test4,list(test3))
+   }
+   Current_Edge_Information <- test4
+   Proposed_Edge_Information <- Current_Edge_Information
     #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
     Edge_Topic_Assignments <- Document_Edge_Matrix #jsut copying it so we get the right dimensions
     #now go in and replace all ones with a sampled edge topic assignment

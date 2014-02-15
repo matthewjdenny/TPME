@@ -9,6 +9,8 @@ NumericVector SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(int number_of_tokens, int numbe
     Function get_observed_edge_value("get_observed_edge_value");
     Function log_multinomial_draw("log_multinomial_draw");
     Function Log_Probability_Of_Edge("Log_Probability_Of_Edge");
+    Function get_edge_topic_assignment("get_edge_topic_assignment");
+    
     int document_author = author - 1;
     
     NumericVector token_topic_assignments(number_of_tokens);
@@ -35,7 +37,7 @@ NumericVector SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(int number_of_tokens, int numbe
             }
             
             token_topic_distribution[t] = additional_edge_probability + 
-            //need to come up with a new caching mechanism to keep track of toek topic assignemnts
+            //need to come up with a new caching mechanism to keep track of token topic assignemnts
             //and number of tokens assigned to the topic across all documents. Wrap the call in an 
             //R function.
         }
