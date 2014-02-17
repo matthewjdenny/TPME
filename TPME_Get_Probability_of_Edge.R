@@ -81,6 +81,6 @@ Log_Probability_Of_Edge <- function(topic,author,recipient,edge_present,for_new_
 
     
     }#end of else statement for calculating for a proposed value
-    
+  #print(log_prob_of_edge) 
   return(log_prob_of_edge)
 }
