@@ -16,24 +16,25 @@ NumericVector SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(int number_of_actors, int author
     Function Log_Probability_Of_Edge("Log_Probability_Of_Edge");
     int document_author = author - 1;
     
-    NumericVector edge_token_assignments(number_of_actors);
+    NumericVector edge_topic_assignments(number_of_actors);
      
     
-    for(int a = 0; a < (number_of_actors -1); ++a){
+    for(int a = 0; a < number_of_actors; ++a){
         if(document_author != a){
             int recipient = a + 1;
             NumericVector edge_log_probabilities(number_of_tokens);
-            for(int w = 0; w < (number_of_tokens -1); ++w){
+            for(int w = 0; w < number_of_tokens; ++w){
                 int token = w + 1;
                 int topic_assignment = as<int>(get_token_topic_assignment(document,token));
                 int actual_edge = as<int>(get_observed_edge_value(document,recipient));
                 edge_log_probabilities[w] = as<double>(Log_Probability_Of_Edge(topic_assignment,author,recipient,actual_edge,0,0));  
             }
-            edge_token_assignments[a] = as<double>(log_multinomial_draw(edge_log_probabilities));
+            int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
+            edge_topic_assignments[a] = as<int>(get_token_topic_assignment(document,sampled_token));
         }
         
     }
-    return edge_token_assignments;
+    return edge_topic_assignments;
 }
 
 
