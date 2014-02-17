@@ -1,0 +1,125 @@
+rm(list = ls())
+
+Number_Of_Iterations = 1
+Base_Alpha =1
+Base_Beta = 0.01
+Number_Of_Topics = 10
+Author_Attributes = matrix(1:17,ncol =2,nrow =17)
+Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
+Document_Edge_Matrix = Document_Edge_Matrix[,-1] 
+Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Test_Word_Matrix.csv", header= F, stringsAsFactors = F)
+Document_Word_Matrix = Document_Word_Matrix[,-1]
+Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
+Latent_Dimensions = 2
+
+#==========================#
+
+    
+    #================ set working driectory and source all functions ====================#
+    setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
+    library(Rcpp)
+    Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
+    Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments.cpp")
+    source("TPME_Sample_Author_Topic_Latent_Space.R")
+    source("TPME_Sample_Topic_Latent_Space_Intercept.R")
+    source("TPME_Get_Probability_of_Edge.R")
+    source("TPME_R_Get_Wrapper_Functions.R")
+    
+    #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
+    
+    Latent_Space_Intercepts <- rep(10, Number_Of_Topics) #this is set to 10 becasue it can only get smaller
+    
+    Number_Of_Documents <- length(Document_Word_Matrix[,1]) # the number of documents is equal to the number of rows 
+    
+    Metropolis_Hastings_Control_Parameter <- 0 #this is used to shrink the proposal variace of the metropolis hastings portion of the algorithm 
+    
+    Number_Of_Authors <- length(Author_Attributes[,1]) 
+    
+    Number_Of_Words <- length(Vocabulary[,1]) #the number of unique words in the corpus
+    
+    Beta <- Base_Beta*Number_Of_Words 
+    
+    #we define alpha to be a vector so that it can accomodate an asymmetric base measure in the future
+    Alpha_Base_Measure_Vector <- rep(Base_Alpha/Number_Of_Topics,Number_Of_Topics)
+    
+    Document_Authors <- Document_Edge_Matrix[,1] #make a vector of document authors
+    
+    Document_Edge_Matrix <- Document_Edge_Matrix[,-1] # remove the authors from the docuemnt edge matrix
+    
+    #token topic assignemnts are stores in a list of vectors data structure
+    Token_Topic_Assignments <- list()
+    for(d in 1:Number_Of_Documents){
+        #allocate a vector of zeros equal to the number of tokens in the document
+        #cur_token_assignments <- rep(0,sum(Document_Word_Matrix[d,])) #assign a zero vector of topic assignments if we then wanted to do a more complicated sampling proceedure 
+        cur_token_assignments <- sample(1:Number_Of_Topics,sum(Document_Word_Matrix[d,]),replace= T) #samples from a discrete uniform distribution
+        Token_Topic_Assignments <- append(Token_Topic_Assignments,list(cur_token_assignments))
+    }
+    
+    #sample latent space postions for each actor for each topic from a uniform distribution. This will be a list of matricies data structure with rows in each matrix being the latent dimensions and columns being each topic 
+    Latent_Space_Positions <- array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+    for(a in 1:Number_Of_Authors){ 
+        Latent_Space_Positions[,,a] <- matrix(0,nrow = Latent_Dimensions, ncol = Number_Of_Topics)
+        for(s in 1:Latent_Dimensions){
+            Latent_Space_Positions[s,,a] <- runif(Number_Of_Topics, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
+        }
+        
+    }
+    
+    #store information about current edge log likelihoods. This is a number of topics to number of authors to number of recipients list of lists containing a list of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
+    test <-   list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions)       
+    test2 <- list()
+    for(i in 1:Number_Of_Authors){
+        test2 = append(test2,list(test))
+    }
+    test3 <- list()
+    for(i in 1:Number_Of_Authors){
+        test3 = append(test3,list(test2))
+    }
+    test4 <- list()
+    for(i in 1:Number_Of_Topics){
+        test4 = append(test4,list(test3))
+    }
+    Current_Edge_Information <- test4
+    Proposed_Edge_Information <- Current_Edge_Information
+    #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
+    Edge_Topic_Assignments <- Document_Edge_Matrix #jsut copying it so we get the right dimensions
+    #now go in and replace all ones with a sampled edge topic assignment
+    for(d in 1:Number_Of_Documents){
+        for(a in 1:Number_Of_Authors){
+            Edge_Topic_Assignments[d,] <- sample(1:Number_Of_Topics,Number_Of_Authors,replace= TRUE) #give it a topic edge assignment value
+        }
+    }
+    
+    #initialize a datastructure to keep a number of topics by number of unique words matrix 
+    Word_Type_Topic_Counts <- matrix(0,nrow = Number_Of_Words, ncol = Number_Of_Topics)
+    #this list keeps a vector for each document of word types for each token in the same order that topic assignemnts are kept
+    Token_Word_Types <- list()
+    for(d in 1:Number_Of_Documents){
+        #create a vector of word types for each token
+        word_indexes <- which(Document_Word_Matrix[d,] > 0)
+        word_counts <- as.numeric(Document_Word_Matrix[d,word_indexes])
+        already <- F
+        for(i in 1:length(word_indexes)){
+            if(!already){
+                already <- T
+                word_types <- rep(word_indexes[i],word_counts[i])
+            }else{
+                word_types <- c(word_types,rep(word_indexes[i],word_counts[i]))
+            }
+        }
+        Token_Word_Types <- append(Token_Word_Types,list(word_types))
+        #now get the token topic assignemnts for this document
+        current_doc_assignments <- Token_Topic_Assignments[[d]]
+        #now go through and increment based in intial draws
+        for(i in 1:length(current_doc_assignments)){
+            Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] <- Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] + 1
+        }
+    }
+
+
+set.seed(1234)
+d=1
+SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector)
+
+    
+    
