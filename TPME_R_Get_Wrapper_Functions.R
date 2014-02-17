@@ -64,3 +64,7 @@ get_number_of_tokens_assigned_to_topic <- function(document,token,topic){
 
 #get_number_of_tokens_assigned_to_topic(1,1,1)
 
+get_new_intercept_sample <- function(topic,variance){
+    return()
+}
+

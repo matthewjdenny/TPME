@@ -33,7 +33,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
     Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
-    source("TPME_Sample_Topic_Latent_Space_Intercept.R")
+    source("TPME_Sample_Latent_Space_Intercepts.cpp")
     source("TPME_Get_Probability_of_Edge.R")
     source("TPME_R_Get_Wrapper_Functions.R")
     
@@ -171,9 +171,9 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
             }
         }
         
-        #5. Sample new intercept for current topic
-        for(t in 1:Number_Of_Topics){
-            Latent_Space_Intercepts <- SAMPLE_NEW_INTERCEPT_FOR_CURRENT_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Edge_Matrix,t)
+        #5. Sample new intercept for current topic and perform a metropolis step
+        foreach(t=1:Number_Of_Topics) %dopar% {
+            Latent_Space_Intercepts[t] <- SAMPLE_NEW_TOPIC_INTERCEPT_CPP(t,Latent_Dimensions,Number_Of_Authors,Proposal_Variance)
         }
         
         
