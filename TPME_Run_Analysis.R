@@ -5,13 +5,15 @@
 
 #======== TESTING =========#
 rm(list = ls())
+
 Number_Of_Iterations = 1
 Base_Alpha =1
 Base_Beta = 0.01
 Number_Of_Topics = 10
 Author_Attributes = matrix(1:17,ncol =2,nrow =17)
 Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
-Document_Edge_Matrix = Document_Edge_Matrix[,-1] 
+Document_Edge_Matrix = Document_Edge_Matrix[,-1]
+Document_Edge_Matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
 Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Test_Word_Matrix.csv", header= F, stringsAsFactors = F)
 Document_Word_Matrix = Document_Word_Matrix[,-1]
 Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
@@ -24,8 +26,12 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
-    source("TPME_Sample_Token_Topic_Assignments.cpp")
-    source("TPME_Sample_Edge_Topic_Assignments.cpp")
+    library(Rcpp)
+    require(doMC)
+    require(foreach)
+    registerDoMC(8)
+    Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
+    Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
     source("TPME_Sample_Topic_Latent_Space_Intercept.R")
     source("TPME_Get_Probability_of_Edge.R")
@@ -41,7 +47,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     
     Number_Of_Authors <- length(Author_Attributes[,1]) 
     
-    Number_Of_Words <- length(Vocabulary) #the number of unique words in the corpus
+    Number_Of_Words <- length(Vocabulary[,1]) #the number of unique words in the corpus
     
     Beta <- Base_Beta*Number_Of_Words 
     
@@ -95,6 +101,38 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
                 Edge_Topic_Assignments[d,] <- sample(1:Number_Of_Topics,Number_Of_Authors,replace= TRUE) #give it a topic edge assignment value
         }
     }
+   
+   #initialize a datastructure to keep a number of topics by number of unique words matrix 
+   Word_Type_Topic_Counts <- matrix(0,nrow = Number_Of_Words, ncol = Number_Of_Topics)
+   #this list keeps a vector for each document of word types for each token in the same order that topic assignemnts are kept
+   Token_Word_Types <- list()
+   for(d in 1:Number_Of_Documents){
+       #create a vector of word types for each token
+       word_indexes <- which(Document_Word_Matrix[d,] > 0)
+       word_counts <- as.numeric(Document_Word_Matrix[d,word_indexes])
+       already <- F
+       for(i in 1:length(word_indexes)){
+           if(!already){
+               already <- T
+               word_types <- rep(word_indexes[i],word_counts[i])
+           }else{
+               word_types <- c(word_types,rep(word_indexes[i],word_counts[i]))
+           }
+       }
+       Token_Word_Types <- append(Token_Word_Types,list(word_types))
+       #now get the token topic assignemnts for this document
+       current_doc_assignments <- Token_Topic_Assignments[[d]]
+       #now go through and increment based in intial draws
+       for(i in 1:length(current_doc_assignments)){
+           Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] <- Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] + 1
+       }
+   }
+   
+   
+   
+   
+   
+   
     
                                   
     #==================== MAIN LOOP OVER NUMER OF ITTERATIONS ====================#                              
@@ -108,19 +146,20 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         
         
         #2. Sample token topic assignments
+        system.time(
         for(d in 1:Number_Of_Documents){
             if(sum(Document_Word_Matrix[d,]) > 0){ #if there is atleast one token in the document
-                Token_Topic_Assignments[[d]][[1]] <- SAMPLE_TOKEN_TOPIC_ASSIGNMENTS(Token_Topic_Assignments[[d]][[1]],Number_Of_Topics,Number_Of_Authors,Alpha_Base_Measure_Vector,Beta,Number_Of_Words,Edge_Topic_Assignments[d,],Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Authors[d],Document_Edge_Matrix)
+                #Token_Topic_Assignments[[d]][[1]] <- 
+                print(SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector))
             }else{ #assign the docuemnt a dummy word and dummy topic
-                
+                print(paste("there were no tokens in document",d))
             }
             
-            
-        }
+        })
         
         #3. Sample document edge assingments 
-        for(d in 1:Number_Of_Documents){
-            Edge_Topic_Assignments[d,] <- SAMPLE_DOCUMENT_EDGE_ASSIGNMENTS(Edge_Topic_Assignments[d,],Latent_Space_Positions,Latent_Space_Intercepts,Latent_Dimensions,Document_Authors[d],Document_Edge_Matrix,sum(Document_Word_Matrix[d,]))
+        foreach(d=1:Number_Of_Documents) %dopar% {
+            Edge_Topic_Assignments[d,] <- SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(Number_Of_Authors,Document_Authors[d],length(Token_Topic_Assignments[[d]]),d)
             
         }
         
