@@ -21,10 +21,10 @@ NumericVector SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(
     int number_of_latent_dimensions
     ){
     
-    Function get_token_topic_assignment("get_token_topic_assignment");
-    Function get_observed_edge_value("get_observed_edge_value");
+    //Function get_token_topic_assignment("get_token_topic_assignment");
+    //Function get_observed_edge_value("get_observed_edge_value");
     Function log_multinomial_draw("log_multinomial_draw");
-    Function Log_Probability_Of_Edge("Log_Probability_Of_Edge");
+    //Function Log_Probability_Of_Edge("Log_Probability_Of_Edge");
     int document_author = author - 1;
     
     NumericVector edge_topic_assignments(number_of_actors);
@@ -37,7 +37,7 @@ NumericVector SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(
             NumericVector edge_log_probabilities(number_of_tokens);
             for(int w = 0; w < number_of_tokens; ++w){
                 int token = w + 1;
-                int topic_assignment = token_topic_assignments[w];
+                int topic_assignment = token_topic_assignments[w] -1;
                 //int topic_assignment = as<int>(get_token_topic_assignment(document,token));
                 int actual_edge = observed_edges[a];
                 //int actual_edge = as<int>(get_observed_edge_value(document,recipient));
@@ -58,8 +58,10 @@ NumericVector SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(
                 }
 
                 double eta = topic_intercept - pow(distance,.5);
+                
                 double log_prob = 0;
-                if(eta > 0){
+                if (eta != 0){
+                    if(eta > 0){
                     if(actual_edge == 1){
                         log_prob = eta -log(1 + exp(eta));
                     }
@@ -75,11 +77,13 @@ NumericVector SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(
                         log_prob = 0 -eta -log(1 + exp(-eta));
                     }
                 }
+                }
+                
                 edge_log_probabilities[w] = log_prob;
             }
             int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
             //edge_topic_assignments[a] = as<int>(get_token_topic_assignment(document,sampled_token));
-            edge_topic_assignments[a] = token_topic_assignments[sampled_token];
+            edge_topic_assignments[a] = token_topic_assignments[sampled_token-1];
         }
         
     }
