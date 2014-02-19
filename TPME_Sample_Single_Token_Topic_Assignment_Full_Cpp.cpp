@@ -108,7 +108,8 @@ NumericVector SAMPLE_SINGLE_TOKEN_TOPIC_ASSIGNMENT_CPP(
                 wttac -=1;
             }
             //now we calculate the first and second terms in the likelihood of of the token being from the current topic
-            double first_term = ntd + (alpha_m[t]/number_of_topics);
+            //double first_term = ntd + (alpha_m[t]/number_of_topics);
+            double first_term = ntd + alpha_m[t];
             double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
             token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
         }

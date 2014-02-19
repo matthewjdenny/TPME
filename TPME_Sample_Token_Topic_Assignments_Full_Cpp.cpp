@@ -118,7 +118,8 @@ NumericVector SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(
                 wttac -=1;
             }
             //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
-            double first_term = ntd + (alpha_m[t]/number_of_topics);
+            //double first_term = ntd + (alpha_m[t]/number_of_topics);
+            double first_term = ntd + alpha_m[t];
             double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
             
             
