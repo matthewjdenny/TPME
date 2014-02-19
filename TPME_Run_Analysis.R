@@ -165,27 +165,10 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         
         
         #3. Sample document edge assingments 
-        system.time(
         for(d in 1:Number_Of_Documents){
-            print(d)
-            #Edge_Topic_Assignments[d,] <- 
-            if(sum(Document_Word_Matrix[d,]) > 1){
-            SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(Number_Of_Authors,Document_Authors[d],length(Token_Topic_Assignments[[d]]),d,Token_Topic_Assignments[[d]],as.numeric(Document_Edge_Matrix[d,]),Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions)
-            }
-            
+            Edge_Topic_Assignments[d,] <- SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(Number_Of_Authors,Document_Authors[d],length(Token_Topic_Assignments[[d]]),d,Token_Topic_Assignments[[d]],as.numeric(Document_Edge_Matrix[d,]),Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions) 
         }
-        )
         
-        Number_Of_Authors
-        Document_Authors[d]
-        length(Token_Topic_Assignments[[d]])
-        d
-        Token_Topic_Assignments[[d]]
-        as.numeric(Document_Edge_Matrix[d,])
-        Latent_Space_Positions[1,,]
-        Latent_Space_Positions[2,,]
-        Latent_Space_Intercepts
-        Latent_Dimensions
         
         #4. Sample latent positions for each actor and topic
         for(t in 1:Number_Of_Topics){
