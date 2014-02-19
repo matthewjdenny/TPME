@@ -2,10 +2,10 @@
 
 log_multinomial_draw <- function(probability_vector){
     #print(probability_vector)
-    edge_selected <-which(rmultinom(1,1,exp(probability_vector)) == 1)
     #print(edge_selected)
-    return(edge_selected)
+    return(which(rmultinom(1,1,exp(probability_vector)) == 1))
 }
+
 
 #log_multinomial_draw(rep(-.25,10))
 
