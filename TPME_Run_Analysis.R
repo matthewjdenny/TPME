@@ -9,12 +9,12 @@ rm(list = ls())
 Number_Of_Iterations = 1
 Base_Alpha =1
 Base_Beta = 0.01
-Number_Of_Topics = 10
+Number_Of_Topics = 50
 Author_Attributes = matrix(1:17,ncol =2,nrow =17)
 Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
 Document_Edge_Matrix = Document_Edge_Matrix[,-1]
 Document_Edge_Matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
-Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Test_Word_Matrix.csv", header= F, stringsAsFactors = F)
+Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Train_Word_Matrix.csv", header= F, stringsAsFactors = F)
 Document_Word_Matrix = Document_Word_Matrix[,-1]
 Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
 Latent_Dimensions = 2
@@ -26,14 +26,16 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
-    library(Rcpp)
+    require(Rcpp)
     require(doMC)
     require(foreach)
     registerDoMC(8)
-    Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
+    #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
+    Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments_Full_Cpp.cpp")
+    Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
     Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
-    source("TPME_Sample_Latent_Space_Intercepts.cpp")
+    #Rcpp::sourceCpp("TPME_Sample_Latent_Space_Intercepts.cpp")
     source("TPME_Get_Probability_of_Edge.R")
     source("TPME_R_Get_Wrapper_Functions.R")
     
@@ -78,21 +80,21 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     }
     
     #store information about current edge log likelihoods. This is a number of topics to number of authors to number of recipients list of lists containing a list of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
-   test <-   list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions)       
+    test <-   list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions)       
     test2 <- list()
-   for(i in 1:Number_Of_Authors){
+    for(i in 1:Number_Of_Authors){
        test2 = append(test2,list(test))
-   }
-   test3 <- list()
-   for(i in 1:Number_Of_Authors){
+    }
+    test3 <- list()
+    for(i in 1:Number_Of_Authors){
        test3 = append(test3,list(test2))
-   }
-   test4 <- list()
-   for(i in 1:Number_Of_Topics){
+    }
+    test4 <- list()
+    for(i in 1:Number_Of_Topics){
        test4 = append(test4,list(test3))
-   }
-   Current_Edge_Information <- test4
-   Proposed_Edge_Information <- Current_Edge_Information
+    }
+    Current_Edge_Information <- test4
+    Proposed_Edge_Information <- Current_Edge_Information
     #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
     Edge_Topic_Assignments <- Document_Edge_Matrix #jsut copying it so we get the right dimensions
     #now go in and replace all ones with a sampled edge topic assignment
@@ -131,10 +133,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
    
    
    
-   
-   
     
-                                  
     #==================== MAIN LOOP OVER NUMER OF ITTERATIONS ====================#                              
     for(i in 1:Number_Of_Iterations){
         
@@ -144,18 +143,26 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
             Proposal_Variance <- (100/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
-        
         #2. Sample token topic assignments
-        system.time(
         for(d in 1:Number_Of_Documents){
-            if(sum(Document_Word_Matrix[d,]) > 0){ #if there is atleast one token in the document
-                #Token_Topic_Assignments[[d]][[1]] <- 
-                print(SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector))
-            }else{ #assign the docuemnt a dummy word and dummy topic
-                print(paste("there were no tokens in document",d))
-            }
-            
-        })
+            if(sum(Document_Word_Matrix[d,]) > 1){ #if there is atleast 2 tokens in the document
+                #Token_Topic_Assignments[[d]] <- 
+                SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector,Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions, as.numeric(Edge_Topic_Assignments[d,]),Token_Topic_Assignments[[d]],apply(Word_Type_Topic_Counts,2,sum),Word_Type_Topic_Counts[Token_Word_Types[[d]],],Number_Of_Words,as.numeric(Document_Edge_Matrix[d,]))
+                
+                #update data structures
+            }else{ 
+                if(sum(Document_Word_Matrix[d,]) > 0){ #if there is one token in the document
+                #print(paste("there was one token in document",d)) 
+                SAMPLE_SINGLE_TOKEN_TOPIC_ASSIGNMENT_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector,Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions, as.numeric(Edge_Topic_Assignments[d,]),Token_Topic_Assignments[[d]],apply(Word_Type_Topic_Counts,2,sum),Word_Type_Topic_Counts[Token_Word_Types[[d]],],Number_Of_Words,as.numeric(Document_Edge_Matrix[d,]))
+                #update data structures
+                
+                }else{
+                    #assign the docuemnt a dummy word and dummy topic
+                    #print(paste("there were no tokens in document",d)) 
+                }   
+            } 
+        }
+        
         
         #3. Sample document edge assingments 
         foreach(d=1:Number_Of_Documents) %dopar% {
