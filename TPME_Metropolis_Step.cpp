@@ -130,30 +130,28 @@ List Metropolis_Step_CPP(
     
     
     //now calculate log ratio between two
-    log_ratio = sum_log_probability_of_proposed_positions - sum_log_probability_of_current_positions;
+    double log_ratio = sum_log_probability_of_proposed_positions - sum_log_probability_of_current_positions;
     
     //take the log of a uniform draw on 0 to  1
-    double lud = log_uniform_draw();
-    
+    double lud = as<double>(log_uniform_draw());
+    List to_return(4);
+    to_return[0] = log_ratio;
     if(log_ratio < lud){
         //if the log ratio is smaller then reject the new positions
-        
+        to_return[1] = current_latent_positions; 
+        to_return[2] = current_intercepts;
         
     }
     else{
-       //accept the new positions 
-        
+        //accept the new positions 
+        to_return[1] = proposed_latent_positions; 
+        to_return[2] = proposed_intercepts; 
         
     }
-    
-            
-    List to_return(4);
-    to_return[0] = log_ratio;
-    to_return[1] = sum_log_probability_of_current_positions; 
-    to_return[2] = sum_log_probability_of_proposed_positions; 
+     
     return to_return;
 }
 
-//Metropolis_Step_CPP(10,10,array(1:1000,c(10,10,10)),array(1:1000,c(10,10,10)),array(runif(200),c(2,10,10)),c(1:10),2,array(runif(200),c(2,10,10)),c(1:10))
+//Metropolis_Step_CPP(30,100,array(1:90000,c(30,30,100)),array(1:90000,c(30,30,100)),array(runif(6000),c(2,100,30)),c(1:100),2,array(runif(6000),c(2,100,30)),c(1:100))
             
 
