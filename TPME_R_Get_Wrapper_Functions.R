@@ -7,6 +7,12 @@ log_multinomial_draw <- function(probability_vector){
     return(edge_selected)
 }
 
+log_uniform_draw <- function(){
+    return(log(runif(1, min=0, max=1)))
+}
+#log_uniform_draw()
+#log(.00000001)
+
 
 #log_multinomial_draw(rep(-.25,10))
 
