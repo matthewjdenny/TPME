@@ -35,7 +35,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
     Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments_Full_Cpp.cpp")
     source("TPME_Sample_Author_Topic_Latent_Space.R")
-    #Rcpp::sourceCpp("TPME_Sample_Latent_Space_Intercepts.cpp")
+    Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
     source("TPME_Get_Probability_of_Edge.R")
     source("TPME_R_Get_Wrapper_Functions.R")
     
@@ -170,20 +170,12 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         }
         
         
-        #4. Sample latent positions for each actor and topic
-        for(t in 1:Number_Of_Topics){
-            for(a in 1:Number_Of_Authors){ #Author_Attributes is a matrix with one row per author and one column per attribute
-                Latent_Space_Positions[,t,a] <- SAMPLE_NEW_LATENT_SPACE_POSITION_FOR_CURRENT_ACTOR_AND_TOPIC(Edge_Topic_Assignments,Latent_Space_Positions[,t,a],Latent_Space_Intercepts,Latent_Dimensions,a,Document_Edge_Matrix)
-                
-            }
-        }
+        #4. Perform MEtropolis step jointly for intercepts, latent positions and betas (not currently implemented)
+        #calculate new latent positions, intercepts and betas
         
-        #5. Sample new intercept for current topic and perform a metropolis step
-        foreach(t=1:Number_Of_Topics) %dopar% {
-            Latent_Space_Intercepts[t] <- SAMPLE_NEW_TOPIC_INTERCEPT_CPP(t,Latent_Dimensions,Number_Of_Authors,Proposal_Variance)
-        }
+        Metropolis_Results <- Metropolis_Step_CPP(30,100,array(1:90000,c(30,30,100)),array(1:90000,c(30,30,100)),array(runif(6000),c(2,100,30)),c(1:100),2,array(runif(6000),c(2,100,30)),c(1:100))
         
-        
+        #assign metropolis results
         
         
     }#end of main loop over number of itterations                     
