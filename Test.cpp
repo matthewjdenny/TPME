@@ -7,6 +7,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 List test(NumericVector myArray){
     IntegerVector arrayDims = myArray.attr("dim");
+    double x = Rf_rnorm(0.0,1.0);
  
     List out(2);
   arma::cube cubeArray(myArray.begin(), arrayDims[0], arrayDims[1], arrayDims[2], false);
@@ -15,7 +16,7 @@ List test(NumericVector myArray){
   cubeArray(0,0,0) = 518;  
   
   out[0] = cubeArray;
-  out[1] = 4;
+  out[1] = x;
  
   return(out); 
 
