@@ -75,7 +75,7 @@ List Topic_Assignment_Step_CPP(
                     current_author_position[0] = current_latent_positions(0,t,document_author);
                     current_author_position[1] = current_latent_positions(1,t,document_author);
                     double current_topic_intercept = current_intercepts[t];
-                    current_topic_betas = betas.row(t);
+                    NumericVector current_topic_betas = betas.row(t);
                     //this calculates the addition to the probability that the token was sampled from the topic by
                     //adding together edge likelihoods associated with that topic in the document
                     double additional_edge_probability = 0;
@@ -250,10 +250,10 @@ List Topic_Assignment_Step_CPP(
                     //if we are on the last itteration do some updating
                     if(i == (number_of_itterations -1)){
                         if(actual_edge == 1){
-                            topic_present_edge_counts(document_author,a,token_topic_assignments2[sampled_token-1]) +=1;
+                            topic_present_edge_counts(document_author,a,(token_topic_assignments2[(sampled_token-1)] -1)) +=1;
                         }
                         else{
-                            topic_absent_edge_counts(document_author,a,token_topic_assignments2[sampled_token-1]) +=1;
+                            topic_absent_edge_counts(document_author,a,(token_topic_assignments2[(sampled_token-1)] -1)) +=1;
                         } 
                     }//end update if statement
                     
