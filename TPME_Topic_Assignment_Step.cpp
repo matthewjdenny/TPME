@@ -25,12 +25,14 @@ List Topic_Assignment_Step_CPP(
     double beta,
     NumericVector alpha_m,
     NumericMatrix edge_topic_assignments,
-    NumericMatrix word_type_topic_counts
+    NumericMatrix token_type_topic_counts,
+    NumericVector topic_token_sums,
+    int number_of_word_types
     ){
     
     
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
-    
+    //still need to implement check for zero tokens in document
     Function log_multinomial_draw("log_multinomial_draw");
     
     IntegerVector arrayDims1 = tpec.attr("dim");
@@ -48,6 +50,7 @@ List Topic_Assignment_Step_CPP(
     double beta_val = 0;
     NumericVector current_author_position(number_of_latent_dimensions);
     NumericVector recipient_position(number_of_latent_dimensions);
+    NumericVector current_topic_betas(number_of_betas);
     
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_itterations; ++i){
@@ -55,8 +58,122 @@ List Topic_Assignment_Step_CPP(
         
         // ========== token topic assignment step =============
         for(int d = 0; d < number_of_documents; ++d){
+            //set all document specific parameters 
+            int document_author = document_authors[d] - 1;
+            NumericVector token_topic_assignments1 = token_topic_assignment_list[d];
+            int number_of_tokens = token_topic_assignments1.length();
             
-        }
+            
+            for(int w = 0; w < number_of_tokens; ++w){
+                int token = w + 1;
+                
+                
+                NumericVector token_topic_distribution(number_of_topics);
+                for(int t = 0; t < number_of_topics; ++t){
+                    int topic = t + 1;
+                    
+                    current_author_position[0] = current_latent_positions(0,t,document_author);
+                    current_author_position[1] = current_latent_positions(1,t,document_author);
+                    double current_topic_intercept = current_intercepts[t];
+                    current_topic_betas = betas.row(t);
+                    //this calculates the addition to the probability that the token was sampled from the topic by
+                    //adding together edge likelihoods associated with that topic in the document
+                    double additional_edge_probability = 0;
+                    for(int a = 0; a < number_of_actors; ++a){
+                        
+                        if(document_author != a){
+                            
+                            int actual_edge = observed_edges(d,a);
+                            
+                            int edge_assignment = edge_topic_assignments(d,a); 
+                            //int edge_assignment = as<int>(get_edge_topic_assignment(document, actor));
+                            if(edge_assignment == topic){
+                                
+                                //get current recipient position
+                                recipient_position[0] = current_latent_positions(0,t,a);
+                                recipient_position[1] = current_latent_positions(1,t,a);
+                                
+                                //initialize distance
+                                double distance = 0;
+                                //calculate distance
+                                for(int k = 0; k < number_of_latent_dimensions; ++k){
+                                    distance += pow((current_author_position[k] - recipient_position[k]),2);
+                                }
+                        
+                                beta_val = 0;
+                                for(int c = 0; c < number_of_betas; ++c){
+                                    beta_val += current_topic_betas[c]*beta_indicator_array(document_author,a,c);
+                                }
+                                //calculate linear predictor
+                                double eta = current_topic_intercept - pow(distance,.5) + beta_val;
+                        
+                                double log_prob = 0;
+                                if(eta > 0){
+                                    if(actual_edge == 1){
+                                        log_prob = eta -log(1 + exp(eta));
+                                    }
+                                    else{
+                                        log_prob = 0 -log(1 + exp(eta));
+                                    }
+                                }
+                                else{
+                                    if(actual_edge == 1){
+                                        log_prob = 0 -log(1 + exp(-eta));
+                                    }
+                                    else{
+                                        log_prob = 0 -eta -log(1 + exp(-eta));
+                                    }
+                                }
+                                additional_edge_probability += log_prob;
+                            }   
+                        } 
+                    }
+                    
+                    
+                    //now we calculate the first and second terms in the likelihood of of the token being from the current topic
+                    int ntd = 0;
+                    for(int b = 0; b < number_of_tokens; ++b){
+                        if(b != w){
+                            if(token_topic_assignments1[b] == topic){
+                                ntd +=1;
+                            }
+                        }
+                    }
+                    //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
+                    int wttac = token_type_topic_counts(w,t);
+                    //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
+                    
+                    int ntt = topic_token_sums[t];
+                    if(topic == token_topic_assignments1[w]){
+                        ntt -= 1;
+                        wttac -=1;
+                    }
+                    //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
+                    //double first_term = ntd + (alpha_m[t]/number_of_topics);
+                    double first_term = ntd + alpha_m[t];
+                    double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
+                    
+                    
+                    token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
+                }
+                int old_topic = token_topic_assignments1[w];
+                token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
+                int new_topic = token_topic_assignments1[w];
+                
+                //now we need to update all of the internal counts for the same words as the current token
+                if(old_topic != new_topic){
+                    topic_token_sums[old_topic] -=1;
+                    topic_token_sums[new_topic] += 1; 
+                    //now for all tokens that are the same
+                    token_type_topic_counts(w,old_topic) -=1;
+                    token_type_topic_counts(w,new_topic) +=1;
+                }
+                
+            }//end of loop over tokens 
+        
+        //now assign the new token topic assignments to the appropriate place in the list.
+        token_topic_assignment_list[d] = token_topic_assignments1; 
+        }//end of token topic assignemnt sampler document loop
         
         
         
@@ -65,22 +182,20 @@ List Topic_Assignment_Step_CPP(
             
             //take care of document specific assignment tasks
             int document_author = document_authors[d] - 1;
-            NumericVector edge_topic_assignments(number_of_actors);
-            NumericVector token_topic_assignments = token_topic_assignment_list[d];
-            int number_of_tokens = token_topic_assignments.length();
+            NumericVector token_topic_assignments2 = token_topic_assignment_list[d];
+            int number_of_tokens2 = token_topic_assignments2.length();
             
             
             
             for(int a = 0; a < number_of_actors; ++a){
                 if(document_author != a){
                     int recipient = a + 1;
+                    int actual_edge = observed_edges(d,a);
                     
-                    NumericVector edge_log_probabilities(number_of_tokens);
-                    for(int w = 0; w < number_of_tokens; ++w){
+                    NumericVector edge_log_probabilities(number_of_tokens2);
+                    for(int w = 0; w < number_of_tokens2; ++w){
                         int token = w + 1;
-                        int topic_assignment = token_topic_assignments[w] -1;
-                        //int topic_assignment = as<int>(get_token_topic_assignment(document,token));
-                        int actual_edge = observed_edges(d,a);
+                        int topic_assignment = token_topic_assignments2[w] -1;
                         //get current topic intercept
                         double current_topic_intercept = current_intercepts[topic_assignment];
                         //get current topic betas
@@ -130,10 +245,19 @@ List Topic_Assignment_Step_CPP(
                         edge_log_probabilities[w] = log_prob;
                     }
                     int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
-                    edge_topic_assignments(d,a) = token_topic_assignments[sampled_token-1];
+                    edge_topic_assignments(d,a) = token_topic_assignments2[sampled_token-1];
                     
-                    //do some updating 
-                }
+                    //if we are on the last itteration do some updating
+                    if(i == (number_of_itterations -1)){
+                        if(actual_edge == 1){
+                            topic_present_edge_counts(document_author,a,token_topic_assignments2[sampled_token-1]) +=1;
+                        }
+                        else{
+                            topic_absent_edge_counts(document_author,a,token_topic_assignments2[sampled_token-1]) +=1;
+                        } 
+                    }//end update if statement
+                    
+                }//end recipeints loop
                 
             }//end of loop over edges for for current document
         }// end of loop over docuemnts for edge-topic assignemnt step
@@ -143,6 +267,7 @@ List Topic_Assignment_Step_CPP(
     
     //return something
     List to_return(1);
+    to_return[0] = 5;
     return to_return;
 }
 
