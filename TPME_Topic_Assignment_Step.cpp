@@ -102,7 +102,7 @@ List Topic_Assignment_Step_CPP(
                         
                         beta_val = 0;
                         for(int c = 0; c < number_of_betas; ++c){
-                            beta_val += current_topic_betas[c]*beta_indicator_array(a,b,c);
+                            beta_val += current_topic_betas[c]*beta_indicator_array(document_author,a,c);
                         }
                         //calculate linear predictor
                         double eta = current_topic_intercept - pow(distance,.5) + beta_val;
@@ -139,12 +139,13 @@ List Topic_Assignment_Step_CPP(
         }// end of loop over docuemnts for edge-topic assignemnt step
         
         
-    }//end of big number of itterations loop for entire step.    
-
+    }//end of big number of itterations loop for entire step. 
+    
+    //return something
+    List to_return(1);
     return to_return;
 }
 
-//Metropolis_Step_CPP(30,100,array(1:90000,c(30,30,100)),array(1:90000,c(30,30,100)),array(runif(6000),c(2,100,30)),c(1:100),2,array(runif(6000),c(2,100,30)),c(1:100))
-            
+
 
 
