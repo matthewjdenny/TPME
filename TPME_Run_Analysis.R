@@ -27,16 +27,14 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     require(Rcpp)
-    require(doMC)
-    require(foreach)
-    registerDoMC(8)
     #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
-    Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments_Full_Cpp.cpp")
-    Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
-    Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments_Full_Cpp.cpp")
-    source("TPME_Sample_Author_Topic_Latent_Space.R")
+    #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments_Full_Cpp.cpp")
+    #Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
+    #Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments_Full_Cpp.cpp")
+    #source("TPME_Sample_Author_Topic_Latent_Space.R")
+    #source("TPME_Get_Probability_of_Edge.R")
     Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
-    source("TPME_Get_Probability_of_Edge.R")
+    Rcpp::sourceCpp("TPME_Topic_assignment_Step.cpp")
     source("TPME_R_Get_Wrapper_Functions.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
@@ -128,9 +126,13 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
        for(i in 1:length(current_doc_assignments)){
            Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] <- Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] + 1
        }
-   }
-   
-   
+    }
+    
+   #initialize betas 
+    Number_of_Betas <- 4
+    Betas <- matrix(runif(Number_Of_Topics*Number_of_Betas),nrow =Number_Of_Topics,ncol = Number_of_Betas)
+    Beta_Indicator_Array <- array(sample(0:1,Number_Of_Authors*Number_Of_Authors*Number_of_Betas,replace= T),c(Number_Of_Authors,Number_Of_Authors,Number_of_Betas))
+    
    
    
     
@@ -139,44 +141,68 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
-        if(Metropolis_Hastings_Control_Parameter < 101){
-            Proposal_Variance <- (100/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
+        if(Metropolis_Hastings_Control_Parameter < 11){
+            Proposal_Variance <- (10/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
         #2. Sample token topic assignments
-        for(d in 1:Number_Of_Documents){
-            if(sum(Document_Word_Matrix[d,]) > 1){ #if there is atleast 2 tokens in the document
-                #Token_Topic_Assignments[[d]] <- 
-                SAMPLE_TOKEN_TOPIC_ASSIGNMENTS_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector,Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions, as.numeric(Edge_Topic_Assignments[d,]),Token_Topic_Assignments[[d]],apply(Word_Type_Topic_Counts,2,sum),Word_Type_Topic_Counts[Token_Word_Types[[d]],],Number_Of_Words,as.numeric(Document_Edge_Matrix[d,]))
-                
-                #update data structures
-            }else{ 
-                if(sum(Document_Word_Matrix[d,]) > 0){ #if there is one token in the document
-                #print(paste("there was one token in document",d)) 
-                SAMPLE_SINGLE_TOKEN_TOPIC_ASSIGNMENT_CPP(length(Token_Topic_Assignments[[d]]),Number_Of_Topics,Number_Of_Authors,Document_Authors[d],d,Beta,Alpha_Base_Measure_Vector,Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions, as.numeric(Edge_Topic_Assignments[d,]),Token_Topic_Assignments[[d]],apply(Word_Type_Topic_Counts,2,sum),Word_Type_Topic_Counts[Token_Word_Types[[d]],],Number_Of_Words,as.numeric(Document_Edge_Matrix[d,]))
-                #update data structures
-                
-                }else{
-                    #assign the docuemnt a dummy word and dummy topic
-                    #print(paste("there were no tokens in document",d)) 
-                }   
-            } 
-        }
+        Topic_Assignment_Results <- Topic_Assignment_Step_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            array(0,c(Number_Of_Authors,Number_Of_Authors,Number_Of_Topics)),
+            array(0,c(Number_Of_Authors,Number_Of_Authors,Number_Of_Topics)),
+            Latent_Space_Positions, 
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            100,
+            Proposal_Variance,
+            Number_Of_Documents,
+            as.matrix(Document_Edge_Matrix),
+            Token_Topic_Assignments,
+            Token_Word_Types,
+            Document_Authors,
+            Beta,
+            Alpha_Base_Measure_Vector,
+            as.matrix(Edge_Topic_Assignments),
+            Word_Type_Topic_Counts,
+            apply(Word_Type_Topic_Counts,2,sum),
+            Number_Of_Words
+            )
         
         
-        #3. Sample document edge assingments 
-        for(d in 1:Number_Of_Documents){
-            Edge_Topic_Assignments[d,] <- SAMPLE_EDGE_TOPIC_ASSIGNMENTS_CPP(Number_Of_Authors,Document_Authors[d],length(Token_Topic_Assignments[[d]]),d,Token_Topic_Assignments[[d]],as.numeric(Document_Edge_Matrix[d,]),Latent_Space_Positions[1,,],Latent_Space_Positions[2,,],Latent_Space_Intercepts,Latent_Dimensions) 
-        }
+        #Assign Results
+        Token_Topic_Assignments <- Topic_Assignment_Results[[1]]
+        Topic_Present_Edge_Counts <- Topic_Assignment_Results[[2]]
+        Topic_Absent_Edge_Counts <- Topic_Assignment_Results[[3]]
+        Word_Type_Topic_Counts <- Topic_Assignment_Results[[4]]
+        Edge_Topic_Assignments <- Topic_Assignment_Results[[5]]
         
         
-        #4. Perform MEtropolis step jointly for intercepts, latent positions and betas (not currently implemented)
+        #3. Perform MEtropolis step jointly for intercepts, latent positions and betas (not currently implemented)
         #calculate new latent positions, intercepts and betas
         
-        Metropolis_Results <- Metropolis_Step_CPP(30,100,array(1:90000,c(30,30,100)),array(1:90000,c(30,30,100)),array(runif(6000),c(2,100,30)),c(1:100),2,array(runif(6000),c(2,100,30)),c(1:100))
+        Metropolis_Results <- Metropolis_Step_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            Topic_Present_Edge_Counts,
+            Topic_Absent_Edge_Counts,
+            Latent_Space_Positions,
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            1000,
+            Proposal_Variance
+            )
         
         #assign metropolis results
-        
+        Latent_Space_Positions <- Metropolis_Results[[1000]]
+        Latent_Space_Intercepts <- Metropolis_Results[[2000]]
+        Betas <- Metropolis_Results[[3000]]
         
     }#end of main loop over number of itterations                     
     
