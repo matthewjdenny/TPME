@@ -5,22 +5,22 @@ using namespace Rcpp;
 // Tests the array functionality of RcppArmadillo
 
 // [[Rcpp::export]]
-List test(NumericVector myArray){
+List test(NumericVector myArray, NumericVector probs){
     IntegerVector arrayDims = myArray.attr("dim");
     double x = Rf_rnorm(0.0,1.0);
- 
+    Function log_multinomial_draw("log_multinomial_draw");
     List out(2);
   arma::cube cubeArray(myArray.begin(), arrayDims[0], arrayDims[1], arrayDims[2], false);
- 
   //change one element in the array/cube
   cubeArray(0,0,0) = 518;  
   
   out[0] = cubeArray;
-  out[1] = x;
+  out[1] = log_multinomial_draw(probs);
  
   return(out); 
 
 }
+//test(array(1:1000,c(10,10,10)), rnorm(100,5,1))
 
 // [[Rcpp::export]]
 List test2(
@@ -80,16 +80,10 @@ NumericVector words_in_document
             int document_author = document_authors[d] - 1;
             NumericVector token_topic_assignments1 = token_topic_assignment_list[d];
             int number_of_tokens = words_in_document[d];
-            
-            int test = 6;
-            
-            
+
             for(int w = 0; w < number_of_tokens; ++w){
                 int token = w + 1;
-                
-                
                 NumericVector token_topic_distribution(number_of_topics);
-                
                 for(int t = 0; t < number_of_topics; ++t){
                     int topic = t + 1;
                     
@@ -149,8 +143,7 @@ NumericVector words_in_document
                             }   
                         } 
                     }
-                    
-                    
+          
                     //now we calculate the first and second terms in the likelihood of of the token being from the current topic
                     int ntd = 0;
                     for(int b = 0; b < number_of_tokens; ++b){
@@ -160,10 +153,7 @@ NumericVector words_in_document
                             }
                         }
                     }
-                    //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
                     int wttac = token_type_topic_counts(w,t);
-                    //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
-                    
                     int ntt = topic_token_sums[t];
                     if(topic == token_topic_assignments1[w]){
                         ntt -= 1;
@@ -173,36 +163,27 @@ NumericVector words_in_document
                     //double first_term = ntd + (alpha_m[t]/number_of_topics);
                     double first_term = ntd + alpha_m[t];
                     double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
-                    
-                    
-                    token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
-                    
+
+                    //token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
+                    token_topic_distribution[t] = wttac;
                 }
-                
-                
-                ////problem exists here!!!!!!!!!!!
+
                 int old_topic = token_topic_assignments1[w];
-                token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
+                //token_topic_assignments1[w] 
+                int tester = as<int>(log_multinomial_draw(token_topic_distribution));        
                 int new_topic = token_topic_assignments1[w];
-                ///before this line!!!!!!!!!!
-                if(test == 5){
                 //now we need to update all of the internal counts for the same words as the current token
-                if(old_topic != 100){
-                    topic_token_sums[old_topic-1] -=1;
-                    topic_token_sums[new_topic-1] += 1; 
+                if(old_topic != new_topic){
+                    topic_token_sums[(old_topic-1)] -=1;
+                    topic_token_sums[(new_topic-1)] += 1; 
                     //now for all tokens that are the same
                     token_type_topic_counts(w,(old_topic-1)) -=1;
                     token_type_topic_counts(w,(new_topic-1)) +=1;
                 }
-            }
             }//end of loop over tokens 
-        
-        if(test == 5){
         //now assign the new token topic assignments to the appropriate place in the list.
-        token_topic_assignment_list[d] = token_topic_assignments1;
-            }
+        token_topic_assignment_list[d] = token_topic_assignments1; 
         }//end of token topic assignemnt sampler document loop
-  
     }
     List to_return(3);
     to_return[1] = words_in_document;
