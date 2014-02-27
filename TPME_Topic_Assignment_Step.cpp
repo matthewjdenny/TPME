@@ -62,6 +62,7 @@ List Topic_Assignment_Step_CPP(
             int document_author = document_authors[d] - 1;
             NumericVector token_topic_assignments1 = token_topic_assignment_list[d];
             int number_of_tokens = token_topic_assignments1.length();
+            NumericVector token_word_types = token_word_type_list[d];
             
             
             for(int w = 0; w < number_of_tokens; ++w){
@@ -140,13 +141,19 @@ List Topic_Assignment_Step_CPP(
                         }
                     }
                     //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
-                    int wttac = token_type_topic_counts(w,t);
+                    int current_word = token_word_types[w] -1;
+                    int wttac = token_type_topic_counts(current_word,t);
                     //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
                     
                     int ntt = topic_token_sums[t];
                     if(topic == token_topic_assignments1[w]){
                         ntt -= 1;
                         wttac -=1;
+                    }
+                    
+                    //hack to make things work until I can find the problem
+                    if(wttac < 0){
+                        wttac = 0;
                     }
                     //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
                     //double first_term = ntd + (alpha_m[t]/number_of_topics);
@@ -162,11 +169,13 @@ List Topic_Assignment_Step_CPP(
                 
                 //now we need to update all of the internal counts for the same words as the current token
                 if(old_topic != new_topic){
-                    topic_token_sums[old_topic] -=1;
-                    topic_token_sums[new_topic] += 1; 
+                    topic_token_sums[(old_topic-1)] -=1;
+                    topic_token_sums[(new_topic-1)] += 1;
+                    
+                    int current_word_type = token_word_types[w] -1;
                     //now for all tokens that are the same
-                    token_type_topic_counts(w,old_topic) -=1;
-                    token_type_topic_counts(w,new_topic) +=1;
+                    token_type_topic_counts(current_word_type,(old_topic-1)) -=1;
+                    token_type_topic_counts(current_word_type,(new_topic-1)) +=1;
                 }
                 
             }//end of loop over tokens 
