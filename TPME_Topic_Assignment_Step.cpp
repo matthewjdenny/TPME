@@ -275,12 +275,13 @@ List Topic_Assignment_Step_CPP(
     }//end of big number of itterations loop for entire step. 
     
     //return something
-    List to_return(5);
+    List to_return(6);
     to_return[0] = token_topic_assignment_list;
     to_return[1] = topic_present_edge_counts;
     to_return[2] = topic_absent_edge_counts;
     to_return[3] = token_type_topic_counts;
     to_return[4] = edge_topic_assignments;
+    to_return[5] = number_of_documents;
     return to_return;
 }
 
