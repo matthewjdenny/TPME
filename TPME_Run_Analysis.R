@@ -9,12 +9,12 @@ rm(list = ls())
 Number_Of_Iterations = 1
 Base_Alpha =1
 Base_Beta = 0.01
-Number_Of_Topics = 50
+Number_Of_Topics = 100
 Author_Attributes = matrix(1:17,ncol =2,nrow =17)
 Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
 Document_Edge_Matrix = Document_Edge_Matrix[,-1]
 Document_Edge_Matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
-Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Train_Word_Matrix.csv", header= F, stringsAsFactors = F)
+Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
 Document_Word_Matrix = Document_Word_Matrix[,-1]
 Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
 Latent_Dimensions = 2
@@ -141,11 +141,12 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
-        if(Metropolis_Hastings_Control_Parameter < 11){
-            Proposal_Variance <- (10/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
+        if(Metropolis_Hastings_Control_Parameter < 6){
+            Proposal_Variance <- (3/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
         #2. Sample token topic assignments
+        
         Topic_Assignment_Results <- Topic_Assignment_Step_CPP(
             Number_Of_Authors, 
             Number_Of_Topics,
@@ -177,8 +178,11 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         Token_Topic_Assignments <- Topic_Assignment_Results[[1]]
         Topic_Present_Edge_Counts <- Topic_Assignment_Results[[2]]
         Topic_Absent_Edge_Counts <- Topic_Assignment_Results[[3]]
+        #Test: (sum(Topic_Present_Edge_Counts) + sum(Topic_Absent_Edge_Counts)) == (Number_Of_Authors -1)* Number_Of_Documents
         Word_Type_Topic_Counts <- Topic_Assignment_Results[[4]]
+        #Test: sum(Word_Type_Topic_Counts) == sum(unlist(lapply(Token_Topic_Assignments,length)))
         Edge_Topic_Assignments <- Topic_Assignment_Results[[5]]
+        #sum(Edge_Topic_Assignments)
         
         
         #3. Perform MEtropolis step jointly for intercepts, latent positions and betas (not currently implemented)
@@ -203,10 +207,16 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         Latent_Space_Positions <- Metropolis_Results[[1000]]
         Latent_Space_Intercepts <- Metropolis_Results[[2000]]
         Betas <- Metropolis_Results[[3000]]
-        
-    }#end of main loop over number of itterations                     
-    
-    
+        #Metropolis_Results[2001:2030]
+        #sum(unlist(Metropolis_Results[3001:4000]))
+    }#end of main loop over number of itterations
+   
+   
+#     intercepts <- rep(0,1000)
+#     for(i in 1:1000){
+#         intercepts[i] <- Metropolis_Results[[1000+i]][1]
+#     }
+#     plot(intercepts)
     #get things ready to return a model object with all of the relevant info
     
     #save everything
