@@ -20,6 +20,7 @@ List Metropolis_Step_CPP(
     ){
         
     Function log_uniform_draw("log_uniform_draw");
+    Function gaussian_draw("gaussian_draw");
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -30,14 +31,14 @@ List Metropolis_Step_CPP(
     IntegerVector arrayDims3 = clp.attr("dim");
     arma::cube current_latent_positions(clp.begin(), arrayDims3[0], arrayDims3[1], arrayDims3[2], false);
     
-    //IntegerVector arrayDims4 = plp.attr("dim");
+    IntegerVector arrayDims4 = clp.attr("dim");
     //arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
     //Create an array to hold new latent positions
-    arma::cube proposed_latent_positions = current_latent_positions;
+    //arma::cube proposed_latent_positions = current_latent_positions;
     
-    NumericVector proposed_intercepts = current_intercepts;
+    //NumericVector proposed_intercepts = current_intercepts;
     
-    NumericMatrix proposed_betas = betas;
+    //NumericMatrix proposed_betas = betas;
     
     IntegerVector arrayDims5 = indicator_array.attr("dim");
     arma::cube beta_indicator_array(indicator_array.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
@@ -61,22 +62,29 @@ List Metropolis_Step_CPP(
         
         sum_log_probability_of_current_positions = 0;
         sum_log_probability_of_proposed_positions = 0;
+        NumericVector proposed_intercepts(number_of_topics);
+        arma::cube proposed_latent_positions(clp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
+        NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
-            proposed_intercepts[t] = Rf_rnorm(current_intercepts[t],proposal_variance);
+            double temp = current_intercepts[t];
+            //proposed_intercepts[t] = as<double>(gaussian_draw(temp,proposal_variance));
+            proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
+            //proposed_intercepts[t] = t;
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);        
+                    //proposed_latent_positions(l,t,a) = as<double>(gaussian_draw(current_latent_positions(l,t,a),proposal_variance));
+                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
+                //proposed_betas(t,b) = as<double>(gaussian_draw(betas(t,b),proposal_variance));
                 proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
             }
-            
         }
         
         
@@ -194,6 +202,13 @@ List Metropolis_Step_CPP(
         //take the log of a uniform draw on 0 to  1
         double lud = as<double>(log_uniform_draw());
         
+        NumericVector test(100);
+        //for(int j = 0; j < 100; ++j){
+        //    test[j] = proposed_intercepts[j];
+        //}
+        test = proposed_intercepts;
+        
+        double cur = proposed_intercepts[1];
         if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
             to_return[i] = current_latent_positions; 
@@ -210,6 +225,8 @@ List Metropolis_Step_CPP(
             to_return[2*number_of_metropolis_itterations+i] = proposed_betas;
             to_return[3*number_of_metropolis_itterations+i] = 1;
             //update current data structures with proposed positions
+            
+            
             current_latent_positions = proposed_latent_positions;
             current_intercepts = proposed_intercepts;
             betas = proposed_betas;
