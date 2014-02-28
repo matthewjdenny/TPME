@@ -11,6 +11,17 @@ log_multinomial_draw <- function(probability_vector){
 log_uniform_draw <- function(){
     return(log(runif(1, min=0, max=1)))
 }
+
+gaussian_draw <- function(mean,variance){
+    #print(paste("mean:",mean))
+    #print(paste("var:",variance))
+    #ret <- rnorm(1,mean,variance)
+    #print(paste("ret:",ret))
+    return(rnorm(1,mean,variance))
+}
+
+gaussian_draw(1,9)
+
 #log_uniform_draw()
 #log(.00000001)
 
