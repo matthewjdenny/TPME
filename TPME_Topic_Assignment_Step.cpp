@@ -66,7 +66,7 @@ List Topic_Assignment_Step_CPP(
             
             
             for(int w = 0; w < number_of_tokens; ++w){
-                int token = w + 1;
+                //int token = w + 1;
                 
                 
                 NumericVector token_topic_distribution(number_of_topics);
@@ -198,12 +198,12 @@ List Topic_Assignment_Step_CPP(
             
             for(int a = 0; a < number_of_actors; ++a){
                 if(document_author != a){
-                    int recipient = a + 1;
+                    //int recipient = a + 1;
                     int actual_edge = observed_edges(d,a);
                     
                     NumericVector edge_log_probabilities(number_of_tokens2);
                     for(int w = 0; w < number_of_tokens2; ++w){
-                        int token = w + 1;
+                        //int token = w + 1;
                         int topic_assignment = token_topic_assignments2[w] -1;
                         //get current topic intercept
                         double current_topic_intercept = current_intercepts[topic_assignment];
