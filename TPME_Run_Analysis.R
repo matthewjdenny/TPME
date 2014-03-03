@@ -10,26 +10,27 @@ rm(list = ls())
 #Base_Alpha =1
 #Base_Beta = 0.01
 #Number_Of_Topics = 50
-author_attributes =  read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Email_Name_Dept_Gender_2011.csv", header= T, stringsAsFactors = F)
+author_attributes =  read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Email_Name_Dept_Gender_2011.csv", header= T, stringsAsFactors = F)
 #making a judgement call that Robbin silvers in a woman
 author_attributes[14,4] <- F
 
-document_edge_matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
-document_edge_matrix = Document_Edge_Matrix[,-1]
-document_edge_matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
-document_word_matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
-document_word_matrix = Document_Word_Matrix[,-1]
-vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
+document_edge_matrix = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
+document_edge_matrix = document_edge_matrix[,-1]
+document_edge_matrix[,1] <- document_edge_matrix[,1] + 1 #make sure that authors are indexed starting at 1
+document_word_matrix = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
+document_word_matrix = document_word_matrix[,-1]
+vocabulary = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
 #Latent_Dimensions = 2
 
 #==========================#
-}
 
-Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2){
+
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     require(Rcpp)
+    require(RcppArmadillo)
     #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
     #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments_Full_Cpp.cpp")
     #Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
@@ -37,7 +38,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
     #source("TPME_Sample_Author_Topic_Latent_Space.R")
     #source("TPME_Get_Probability_of_Edge.R")
     Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
-    Rcpp::sourceCpp("TPME_Topic_assignment_Step.cpp")
+    Rcpp::sourceCpp("TPME_Topic_Assignment_Step.cpp")
     source("TPME_R_Get_Wrapper_Functions.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
@@ -159,6 +160,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
     
     #==================== MAIN LOOP OVER NUMER OF ITTERATIONS ====================#                              
     for(i in 1:Number_Of_Iterations){
+        print(paste("Current Outter Itteration:",i))
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
@@ -196,6 +198,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
         
         
         #Assign Results
+        print(paste("Completed Topic Assignment Step for Itteration :",i))
         Token_Topic_Assignments <- Topic_Assignment_Results[[1]]
         Topic_Present_Edge_Counts <- Topic_Assignment_Results[[2]]
         Topic_Absent_Edge_Counts <- Topic_Assignment_Results[[3]]
@@ -225,12 +228,15 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
             )
         
         #assign metropolis results
-        Latent_Space_Positions <- Metropolis_Results[[1000]]
-        Latent_Space_Intercepts <- Metropolis_Results[[2000]]
-        Betas <- Metropolis_Results[[3000]]
+        print(paste("Completed Metropolis Step for Itteration :",i))
+        
+        Latent_Space_Positions <- Metropolis_Results[[100000]]
+        Latent_Space_Intercepts <- Metropolis_Results[[200000]]
+        Betas <- Metropolis_Results[[300000]]
         #testing
         #Metropolis_Results[2001:2030]
-        #sum(unlist(Metropolis_Results[30001:40000]))
+        accept = sum(unlist(Metropolis_Results[300001:400000]))/100000
+        print(paste("Acceptance Rate :",accept))
         #intercepts <- rep(0,10000)
         #for(i in 1:10000){
         #    intercepts[i] <- Metropolis_Results[[i]][20]
@@ -243,7 +249,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
    
 
     #get things ready to return a model object with all of the relevant info
-   Return_List <- list(list(Metropolis_Results),list(Topic_Assignment_Results))
+   Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
    
     
     #save everything
@@ -252,3 +258,12 @@ Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.
 } # End of Run_Analysis definition
 
 # test
+Test_Result <- Run_Analysis()
+intercepts <- rep(0,100000)
+Metropolis_Results <- Test_Result[[1]]
+
+for(i in 1:100000){
+    intercepts[i] <- Metropolis_Results[[1]][[100000+i]][30]
+}
+plot(intercepts)
+
