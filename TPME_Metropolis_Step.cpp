@@ -208,7 +208,7 @@ List Metropolis_Step_CPP(
         //}
         test = proposed_intercepts;
         
-        double cur = proposed_intercepts[1];
+        
         if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
             to_return[i] = current_latent_positions; 
