@@ -6,23 +6,26 @@
 #======== TESTING =========#
 rm(list = ls())
 
-Number_Of_Iterations = 1
-Base_Alpha =1
-Base_Beta = 0.01
-Number_Of_Topics = 100
-Author_Attributes = matrix(1:17,ncol =2,nrow =17)
-Document_Edge_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
-Document_Edge_Matrix = Document_Edge_Matrix[,-1]
-Document_Edge_Matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
-Document_Word_Matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
-Document_Word_Matrix = Document_Word_Matrix[,-1]
-Vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
-Latent_Dimensions = 2
+#Number_Of_Iterations = 1
+#Base_Alpha =1
+#Base_Beta = 0.01
+#Number_Of_Topics = 50
+author_attributes =  read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Email_Name_Dept_Gender_2011.csv", header= T, stringsAsFactors = F)
+#making a judgement call that Robbin silvers in a woman
+author_attributes[14,4] <- F
+
+document_edge_matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
+document_edge_matrix = Document_Edge_Matrix[,-1]
+document_edge_matrix[,1] <- Document_Edge_Matrix[,1] + 1 #make sure that authors are indexed starting at 1
+document_word_matrix = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
+document_word_matrix = Document_Word_Matrix[,-1]
+vocabulary = read.csv("/Users/matthewjdenny/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
+#Latent_Dimensions = 2
 
 #==========================#
+}
 
-
-Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes, Document_Edge_Matrix ,Document_Word_Matrix, Vocabulary, Latent_Dimensions){
+Run_Analysis <- function(Number_Of_Iterations = 1, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
@@ -131,7 +134,25 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
    #initialize betas 
     Number_of_Betas <- 4
     Betas <- matrix(runif(Number_Of_Topics*Number_of_Betas),nrow =Number_Of_Topics,ncol = Number_of_Betas)
-    Beta_Indicator_Array <- array(sample(0:1,Number_Of_Authors*Number_Of_Authors*Number_of_Betas,replace= T),c(Number_Of_Authors,Number_Of_Authors,Number_of_Betas))
+   
+   #generate indicator array
+    Beta_Indicator_Array <- array(0,c(Number_Of_Authors,Number_Of_Authors,Number_of_Betas))
+   for(j in 1:Number_Of_Authors){
+       for(k in 1:Number_Of_Authors){
+               if(Author_Attributes$Gender[j] == "M" & Author_Attributes$Gender[k] == "M"){
+                Beta_Indicator_Array[j,k,1] = 1   
+               }
+               if(Author_Attributes$Gender[j] == "M" & Author_Attributes$Gender[k] == "F"){
+                   Beta_Indicator_Array[j,k,2] = 1   
+               }
+               if(Author_Attributes$Gender[j] == "F" & Author_Attributes$Gender[k] == "M"){
+                   Beta_Indicator_Array[j,k,3] = 1   
+               }
+               if(Author_Attributes$Gender[j] == "F" & Author_Attributes$Gender[k] == "F"){
+                   Beta_Indicator_Array[j,k,4] = 1   
+               }
+       }
+   }
     
    
    
@@ -158,7 +179,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            100,
+            1000,
             Proposal_Variance,
             Number_Of_Documents,
             as.matrix(Document_Edge_Matrix),
@@ -199,7 +220,7 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            1000,
+            100000,
             Proposal_Variance
             )
         
@@ -207,21 +228,27 @@ Run_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta =
         Latent_Space_Positions <- Metropolis_Results[[1000]]
         Latent_Space_Intercepts <- Metropolis_Results[[2000]]
         Betas <- Metropolis_Results[[3000]]
+        #testing
         #Metropolis_Results[2001:2030]
-        #sum(unlist(Metropolis_Results[3001:4000]))
+        #sum(unlist(Metropolis_Results[30001:40000]))
+        #intercepts <- rep(0,10000)
+        #for(i in 1:10000){
+        #    intercepts[i] <- Metropolis_Results[[i]][20]
+        #}
+        #plot(intercepts)
+        
+        
     }#end of main loop over number of itterations
    
    
-#     intercepts <- rep(0,1000)
-#     for(i in 1:1000){
-#         intercepts[i] <- Metropolis_Results[[1000+i]][1]
-#     }
-#     plot(intercepts)
+
     #get things ready to return a model object with all of the relevant info
+   Return_List <- list(list(Metropolis_Results),list(Topic_Assignment_Results))
+   
     
     #save everything
 
-    
+    return(Return_List)
 } # End of Run_Analysis definition
 
 # test
