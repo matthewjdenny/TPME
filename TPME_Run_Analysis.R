@@ -3,6 +3,16 @@
 # local variables are not capitalized
 # user defined functions are in all caps
 
+#define two functions to make log multinomial and uniform draws
+log_multinomial_draw <- function(probability_vector){
+    return(which(rmultinom(1,1,exp(probability_vector)) == 1))
+}
+
+log_uniform_draw <- function(){
+    return(log(runif(1, min=0, max=1)))
+}
+
+
 Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
     
     #================ set working driectory and source all functions ====================#
@@ -11,7 +21,6 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     require(RcppArmadillo)
     Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
     Rcpp::sourceCpp("TPME_Topic_Assignment_Step.cpp")
-    source("TPME_R_Get_Wrapper_Functions.R")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
