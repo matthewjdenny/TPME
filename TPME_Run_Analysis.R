@@ -3,40 +3,12 @@
 # local variables are not capitalized
 # user defined functions are in all caps
 
-#======== TESTING =========#
-rm(list = ls())
-
-#Number_Of_Iterations = 1
-#Base_Alpha =1
-#Base_Beta = 0.01
-#Number_Of_Topics = 50
-author_attributes =  read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/Email_Name_Dept_Gender_2011.csv", header= T, stringsAsFactors = F)
-#making a judgement call that Robbin silvers in a woman
-author_attributes[14,4] <- F
-
-document_edge_matrix = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/edge-matrix.csv", header= F, stringsAsFactors = F)
-document_edge_matrix = document_edge_matrix[,-1]
-document_edge_matrix[,1] <- document_edge_matrix[,1] + 1 #make sure that authors are indexed starting at 1
-document_word_matrix = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/word-matrix.csv", header= F, stringsAsFactors = F)
-document_word_matrix = document_word_matrix[,-1]
-vocabulary = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_Names_2011/mcdowell/vocab.txt", header= F, stringsAsFactors = F)
-#Latent_Dimensions = 2
-
-#==========================#
-
-
 Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
     require(Rcpp)
     require(RcppArmadillo)
-    #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments.cpp")
-    #Rcpp::sourceCpp("TPME_Sample_Token_Topic_Assignments_Full_Cpp.cpp")
-    #Rcpp::sourceCpp("TPME_Sample_Single_Token_Topic_Assignment_Full_Cpp.cpp")
-    #Rcpp::sourceCpp("TPME_Sample_Edge_Topic_Assignments_Full_Cpp.cpp")
-    #source("TPME_Sample_Author_Topic_Latent_Space.R")
-    #source("TPME_Get_Probability_of_Edge.R")
     Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
     Rcpp::sourceCpp("TPME_Topic_Assignment_Step.cpp")
     source("TPME_R_Get_Wrapper_Functions.R")
@@ -233,15 +205,10 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         Latent_Space_Positions <- Metropolis_Results[[1000]]
         Latent_Space_Intercepts <- Metropolis_Results[[2000]]
         Betas <- Metropolis_Results[[3000]]
-        #testing
-        #Metropolis_Results[2001:2030]
+        
         accept = sum(unlist(Metropolis_Results[3001:4000]))/1000
         print(paste("Acceptance Rate :",accept))
-        #intercepts <- rep(0,10000)
-        #for(i in 1:10000){
-        #    intercepts[i] <- Metropolis_Results[[i]][20]
-        #}
-        #plot(intercepts)
+        
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
         save(Return_List, file = "Current_Itteration_Results.Rdata")
         
@@ -258,13 +225,6 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     return(Return_List)
 } # End of Run_Analysis definition
 
-# test
-Test_Result <- Run_Analysis(Number_Of_Iterations = 50)
-intercepts <- rep(0,100000)
-Metropolis_Results <- Test_Result[[1]]
 
-for(i in 1:1000){
-    intercepts[i] <- Metropolis_Results[[1]][[1000+i]][30]
-}
-plot(intercepts)
+
 
