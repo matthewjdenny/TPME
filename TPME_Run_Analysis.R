@@ -25,7 +25,7 @@ vocabulary = read.csv("~/Dropbox/PINLab/Projects/Denny_Working_Directory/Remove_
 #==========================#
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
@@ -181,7 +181,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            1000,
+            Topic_Step_Itterations,
             Proposal_Variance,
             Number_Of_Documents,
             as.matrix(Document_Edge_Matrix),
@@ -223,26 +223,27 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            100000,
+            Metropolis_Step_Itterations,
             Proposal_Variance
             )
         
         #assign metropolis results
         print(paste("Completed Metropolis Step for Itteration :",i))
         
-        Latent_Space_Positions <- Metropolis_Results[[100000]]
-        Latent_Space_Intercepts <- Metropolis_Results[[200000]]
-        Betas <- Metropolis_Results[[300000]]
+        Latent_Space_Positions <- Metropolis_Results[[1000]]
+        Latent_Space_Intercepts <- Metropolis_Results[[2000]]
+        Betas <- Metropolis_Results[[3000]]
         #testing
         #Metropolis_Results[2001:2030]
-        accept = sum(unlist(Metropolis_Results[300001:400000]))/100000
+        accept = sum(unlist(Metropolis_Results[3001:4000]))/1000
         print(paste("Acceptance Rate :",accept))
         #intercepts <- rep(0,10000)
         #for(i in 1:10000){
         #    intercepts[i] <- Metropolis_Results[[i]][20]
         #}
         #plot(intercepts)
-        
+        Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
+        save(Return_List, file = "Current_Itteration_Results.Rdata")
         
     }#end of main loop over number of itterations
    
@@ -258,12 +259,12 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
 } # End of Run_Analysis definition
 
 # test
-Test_Result <- Run_Analysis()
+Test_Result <- Run_Analysis(Number_Of_Iterations = 50)
 intercepts <- rep(0,100000)
 Metropolis_Results <- Test_Result[[1]]
 
-for(i in 1:100000){
-    intercepts[i] <- Metropolis_Results[[1]][[100000+i]][30]
+for(i in 1:1000){
+    intercepts[i] <- Metropolis_Results[[1]][[1000+i]][30]
 }
 plot(intercepts)
 
