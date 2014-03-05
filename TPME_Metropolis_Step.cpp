@@ -16,7 +16,8 @@ List Metropolis_Step_CPP(
     int number_of_betas,
     NumericVector indicator_array,
     int number_of_metropolis_itterations,
-    double proposal_variance
+    double proposal_variance,
+    NumericVector plp
     ){
         
     Function log_uniform_draw("log_uniform_draw");
@@ -31,7 +32,7 @@ List Metropolis_Step_CPP(
     IntegerVector arrayDims3 = clp.attr("dim");
     arma::cube current_latent_positions(clp.begin(), arrayDims3[0], arrayDims3[1], arrayDims3[2], false);
     
-    IntegerVector arrayDims4 = clp.attr("dim");
+    
     //arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
     //Create an array to hold new latent positions
     //arma::cube proposed_latent_positions = current_latent_positions;
@@ -63,7 +64,8 @@ List Metropolis_Step_CPP(
         sum_log_probability_of_current_positions = 0;
         sum_log_probability_of_proposed_positions = 0;
         NumericVector proposed_intercepts(number_of_topics);
-        arma::cube proposed_latent_positions(clp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
+        IntegerVector arrayDims4 = plp.attr("dim");
+        arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
@@ -77,7 +79,8 @@ List Metropolis_Step_CPP(
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
                     //proposed_latent_positions(l,t,a) = as<double>(gaussian_draw(current_latent_positions(l,t,a),proposal_variance));
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
+                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(0,t,a),proposal_variance);
+                    //proposed_latent_positions(1,t,a) = Rf_rnorm(current_latent_positions(1,t,a),proposal_variance);
                 }
             }
             //for betas
