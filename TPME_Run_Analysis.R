@@ -238,7 +238,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
        Betas,
        Number_of_Betas,
        Beta_Indicator_Array,
-       1000,
+       1000000,
        Proposal_Variance,
        array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
        100
