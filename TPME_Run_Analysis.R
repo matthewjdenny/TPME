@@ -12,6 +12,10 @@ log_uniform_draw <- function(){
     return(log(runif(1, min=0, max=1)))
 }
 
+gaussian_draw <- function(mean,variance){
+    return(rnorm(1,mean,variance))
+}
+
 
 Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
     
@@ -205,7 +209,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
             Number_of_Betas,
             Beta_Indicator_Array,
             Metropolis_Step_Itterations,
-            Proposal_Variance
+            Proposal_Variance,
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
             )
         
         #assign metropolis results
@@ -219,15 +224,30 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         print(paste("Acceptance Rate :",accept))
         
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
-        save(Return_List, file = "Current_Itteration_Results.Rdata")
+        save(Return_List, file = "Current_Itteration_Results_McDowell_3-4-14.Rdata")
         
     }#end of main loop over number of itterations
    
-   
+   #run final metropolis step with more itterations 
+   Metropolis_Results <- Metropolis_Step_CPP(
+       Number_Of_Authors, 
+       Number_Of_Topics,
+       Topic_Present_Edge_Counts,
+       Topic_Absent_Edge_Counts,
+       Latent_Space_Positions,
+       Latent_Space_Intercepts,
+       Latent_Dimensions,
+       Betas,
+       Number_of_Betas,
+       Beta_Indicator_Array,
+       100000,
+       Proposal_Variance,
+       array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+   )
 
     #get things ready to return a model object with all of the relevant info
    Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
-   
+   save(Return_List, file = "Current_Itteration_Results_McDowell_3-4-14.Rdata")
     
     #save everything
 
