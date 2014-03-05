@@ -21,6 +21,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     require(Rcpp)
     require(RcppArmadillo)
     Rcpp::sourceCpp("TPME_Metropolis_Step.cpp")
+    Rcpp::sourceCpp("TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("TPME_Topic_Assignment_Step.cpp")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
@@ -226,7 +227,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     }#end of main loop over number of itterations
    
    #run final metropolis step with more itterations 
-   Metropolis_Results <- Metropolis_Step_CPP(
+   Metropolis_Results <- Metropolis_Sample_CPP(
        Number_Of_Authors, 
        Number_Of_Topics,
        Topic_Present_Edge_Counts,
@@ -237,9 +238,10 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
        Betas,
        Number_of_Betas,
        Beta_Indicator_Array,
-       100000,
+       1000,
        Proposal_Variance,
-       array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+       array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+       100
    )
 
     #get things ready to return a model object with all of the relevant info
