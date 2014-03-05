@@ -68,7 +68,7 @@ document_word_matrix <- document_word_matrix[-remove,]
 #===================================#
 
 # 4. Run analysis for 50,000 itterations by setting equal to 50
-Result <- Run_Analysis(Number_Of_Iterations = 50)
+Result <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T)
     
 
 # 5. Output and Analyze results
