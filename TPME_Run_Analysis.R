@@ -12,9 +12,6 @@ log_uniform_draw <- function(){
     return(log(runif(1, min=0, max=1)))
 }
 
-gaussian_draw <- function(mean,variance){
-    return(rnorm(1,mean,variance))
-}
 
 
 Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
@@ -216,11 +213,11 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         #assign metropolis results
         print(paste("Completed Metropolis Step for Itteration :",i))
         
-        Latent_Space_Positions <- Metropolis_Results[[1000]]
-        Latent_Space_Intercepts <- Metropolis_Results[[2000]]
-        Betas <- Metropolis_Results[[3000]]
+        Latent_Space_Positions <- Metropolis_Results[[Metropolis_Step_Itterations]]
+        Latent_Space_Intercepts <- Metropolis_Results[[2*Metropolis_Step_Itterations]]
+        Betas <- Metropolis_Results[[3*Metropolis_Step_Itterations]]
         
-        accept = sum(unlist(Metropolis_Results[3001:4000]))/1000
+        accept = sum(unlist(Metropolis_Results[(3*Metropolis_Step_Itterations+1):4*Metropolis_Step_Itterations]))/Metropolis_Step_Itterations
         print(paste("Acceptance Rate :",accept))
         
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
