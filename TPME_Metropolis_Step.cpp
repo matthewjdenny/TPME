@@ -21,7 +21,6 @@ List Metropolis_Step_CPP(
     ){
         
     Function log_uniform_draw("log_uniform_draw");
-    Function gaussian_draw("gaussian_draw");
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -72,20 +71,15 @@ List Metropolis_Step_CPP(
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
             double temp = current_intercepts[t];
-            //proposed_intercepts[t] = as<double>(gaussian_draw(temp,proposal_variance));
             proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
-            //proposed_intercepts[t] = t;
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    //proposed_latent_positions(l,t,a) = as<double>(gaussian_draw(current_latent_positions(l,t,a),proposal_variance));
                     proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(0,t,a),proposal_variance);
-                    //proposed_latent_positions(1,t,a) = Rf_rnorm(current_latent_positions(1,t,a),proposal_variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                //proposed_betas(t,b) = as<double>(gaussian_draw(betas(t,b),proposal_variance));
                 proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
             }
         }
