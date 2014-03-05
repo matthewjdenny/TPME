@@ -46,22 +46,20 @@ List Metropolis_Step_CPP(
     
     
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
-    int list_length = (4*number_of_metropolis_itterations);
+    int list_length = (6*number_of_metropolis_itterations);
     List to_return(list_length);
     
     
-    double sum_log_probability_of_current_positions = 0;
-    double sum_log_probability_of_proposed_positions = 0;
-    double beta_val = 0;
-    NumericVector current_author_position(number_of_latent_dimensions);
-    NumericVector proposed_author_position(number_of_latent_dimensions);
-    NumericVector recipient_position(number_of_latent_dimensions);
     
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_metropolis_itterations; ++i){
         
-        sum_log_probability_of_current_positions = 0;
-        sum_log_probability_of_proposed_positions = 0;
+        double beta_val = 0;
+        NumericVector current_author_position(number_of_latent_dimensions);
+        NumericVector proposed_author_position(number_of_latent_dimensions);
+        NumericVector recipient_position(number_of_latent_dimensions);
+        double sum_log_probability_of_current_positions = 0;
+        double sum_log_probability_of_proposed_positions = 0;
         NumericVector proposed_intercepts(number_of_topics);
         IntegerVector arrayDims4 = plp.attr("dim");
         arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
@@ -209,18 +207,22 @@ List Metropolis_Step_CPP(
         if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
             to_return[i] = current_latent_positions; 
-            to_return[number_of_metropolis_itterations+i] = current_intercepts;
-            to_return[2*number_of_metropolis_itterations+i] = betas;
-            to_return[3*number_of_metropolis_itterations+i] = 0;
+            to_return[1000+i] = current_intercepts;
+            to_return[2000+i] = betas;
+            to_return[3000+i] = 0;
+            to_return[4000+i] = sum_log_probability_of_proposed_positions;
+            to_return[5000+i] = sum_log_probability_of_current_positions;
             
             
         }
         else{
             //accept the new positions 
             to_return[i] = proposed_latent_positions; 
-            to_return[number_of_metropolis_itterations+i] = proposed_intercepts;
-            to_return[2*number_of_metropolis_itterations+i] = proposed_betas;
-            to_return[3*number_of_metropolis_itterations+i] = 1;
+            to_return[1000+i] = proposed_intercepts;
+            to_return[2000+i] = proposed_betas;
+            to_return[3000+i] = 1;
+            to_return[4000+i] = sum_log_probability_of_proposed_positions;
+            to_return[5000+i] = sum_log_probability_of_current_positions;
             //update current data structures with proposed positions
             
             
