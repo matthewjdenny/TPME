@@ -58,6 +58,7 @@ List Metropolis_Sample_CPP(
     NumericVector proposed_author_position(number_of_latent_dimensions);
     NumericVector recipient_position(number_of_latent_dimensions);
     int take_draw = 0;
+    int sample_number = 0;
     
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_metropolis_itterations; ++i){
@@ -205,11 +206,12 @@ List Metropolis_Sample_CPP(
         if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
             if(take_draw == sample_interval){
-            to_return[i] = current_latent_positions; 
-            to_return[number_of_metropolis_itterations+i] = current_intercepts;
-            to_return[2*number_of_metropolis_itterations+i] = betas;
-            to_return[3*number_of_metropolis_itterations+i] = 0;
+            to_return[sample_number] = current_latent_positions; 
+            to_return[number_of_metropolis_itterations+sample_number] = current_intercepts;
+            to_return[2*number_of_metropolis_itterations+sample_number] = betas;
+            to_return[3*number_of_metropolis_itterations+sample_number] = 0;
             take_draw = 0;
+            sample_number += 1;
             }
             
             
@@ -217,11 +219,12 @@ List Metropolis_Sample_CPP(
         else{
             //accept the new positions 
             if(take_draw == sample_interval){
-            to_return[i] = proposed_latent_positions; 
-            to_return[number_of_metropolis_itterations+i] = proposed_intercepts;
-            to_return[2*number_of_metropolis_itterations+i] = proposed_betas;
-            to_return[3*number_of_metropolis_itterations+i] = 1;
+            to_return[sample_number] = proposed_latent_positions; 
+            to_return[number_of_metropolis_itterations+sample_number] = proposed_intercepts;
+            to_return[2*number_of_metropolis_itterations+sample_number] = proposed_betas;
+            to_return[3*number_of_metropolis_itterations+sample_number] = 1;
             take_draw = 0;
+            sample_number += 1;
             }
             //update current data structures with proposed positions
             
