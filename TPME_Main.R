@@ -6,11 +6,7 @@ rm(list=ls())
 #library(statnet)
 #library(Rcpp)
 
-remove_zero_word_documents <- function(){
-    remove <- which(apply(document_word_matrix,1,sum) == 0)
-    document_edge_matrix <- document_edge_matrix[-remove,]
-    document_word_matrix <- document_word_matrix[-remove,]
-}
+
 
 # 2. Load user defined functions
 source("TPME_Run_Analysis.R")
