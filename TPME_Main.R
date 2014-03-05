@@ -67,7 +67,7 @@ document_edge_matrix <- document_edge_matrix[-remove,]
 document_word_matrix <- document_word_matrix[-remove,]
 #===================================#
 
-# 4. Run analysis
+# 4. Run analysis for 50,000 itterations by setting equal to 50
 Result <- Run_Analysis(Number_Of_Iterations = 50)
     
 
