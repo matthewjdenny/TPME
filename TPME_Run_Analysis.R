@@ -138,6 +138,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
        }
    }
     
+   #save acceptance rate in a vector that is retured
    
    
     
