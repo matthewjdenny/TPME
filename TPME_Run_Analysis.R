@@ -14,7 +14,7 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000,Run_Sample_Step = F){
     
     #================ set working driectory and source all functions ====================#
     setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
@@ -147,8 +147,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
-        if(Metropolis_Hastings_Control_Parameter < 6){
-            Proposal_Variance <- (3/Metropolis_Hastings_Control_Parameter) # this shrinks down the proposal variance to 1 as we reach the 100th itteration
+        if(Metropolis_Hastings_Control_Parameter < 10){
+            Proposal_Variance <- 1/Metropolis_Hastings_Control_Parameter # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
         #2. Sample token topic assignments
@@ -218,7 +218,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         Latent_Space_Intercepts <- Metropolis_Results[[2*Metropolis_Step_Itterations]]
         Betas <- Metropolis_Results[[3*Metropolis_Step_Itterations]]
         
-        accept = sum(unlist(Metropolis_Results[(3*Metropolis_Step_Itterations+1):4*Metropolis_Step_Itterations]))/Metropolis_Step_Itterations
+        accept = sum(unlist(Metropolis_Results[3001:4000]))/1000
         print(paste("Acceptance Rate :",accept))
         
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
@@ -226,28 +226,28 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         
     }#end of main loop over number of itterations
    
-   #run final metropolis step with more itterations 
-   Metropolis_Results <- Metropolis_Sample_CPP(
-       Number_Of_Authors, 
-       Number_Of_Topics,
-       Topic_Present_Edge_Counts,
-       Topic_Absent_Edge_Counts,
-       Latent_Space_Positions,
-       Latent_Space_Intercepts,
-       Latent_Dimensions,
-       Betas,
-       Number_of_Betas,
-       Beta_Indicator_Array,
-       1000000,
-       Proposal_Variance,
-       array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-       100
-   )
-
-    #get things ready to return a model object with all of the relevant info
-   Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
-   save(Return_List, file = "Current_Itteration_Results_McDowell_3-4-14.Rdata")
-    
+    if(Run_Sample_Step){
+        #run final metropolis step with more itterations 
+        Metropolis_Results <- Metropolis_Step_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            Topic_Present_Edge_Counts,
+            Topic_Absent_Edge_Counts,
+            Latent_Space_Positions,
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            1000000,
+            Proposal_Variance,
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+        )
+        
+        #get things ready to return a model object with all of the relevant info
+        Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
+        save(Return_List, file = "Final_Itteration_Results_McDowell_3-4-14.Rdata")
+    }
     #save everything
 
     return(Return_List)
