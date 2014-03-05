@@ -9,10 +9,6 @@ log_uniform_draw <- function(){
 }
 
 gaussian_draw <- function(mean,variance){
-    #print(paste("mean:",mean))
-    #print(paste("var:",variance))
-    #ret <- rnorm(1,mean,variance)
-    #print(paste("ret:",ret))
     return(rnorm(1,mean,variance))
 }
 
