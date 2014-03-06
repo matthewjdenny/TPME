@@ -1,11 +1,19 @@
 
-Generate_Model_Diagnsotics <- function(output_file = "Test",Actors = 17,Itterations = 1000, Latent_Spaces = 2, Topics = 50,LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"){
+Generate_Model_Diagnsotics <- function(output_file = "Test",Actors = 17,Itterations = 1000, Latent_Spaces = 2, Topics = 50,LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1){
     #load current results
     #load("Current_Itteration_Results.Rdata")
+    print("Loading Data...")
     load(paste("./Output/",output_file,".Rdata", sep = ""))
-         
+    
+    print("Extracting Reduced Data")
     #extract current metropolis results
     Metropolis_Results <- Return_List[[1]]
+    Topic_Model_Results <- Return_List[[2]]
+    #free up memory
+    rm(Return_List)
+    
+    #thin out the data by taking every Thin_Itterations itteration for the metropolis step
+    Metropolis_Results <- Metropolis_Results[seq(1, length(Metropolis_Results),Thin_Itterations)]
          
     #display current accept rate
     start <- (3*Itterations) + 1
@@ -77,7 +85,7 @@ Generate_Model_Diagnsotics <- function(output_file = "Test",Actors = 17,Itterati
     
     
     # ======= Now generate top words and topic model diagnostics ====== #
-    Topic_Model_Results <- Return_List[[2]]
+    
     
     
     
