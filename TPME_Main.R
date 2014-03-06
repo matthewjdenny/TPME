@@ -1,6 +1,6 @@
 # Main class to run TPME Model
 
-
+#source("~/Dropbox/PINLab/Projects/R_Code/TPMNE/TPME_Main.R")
 
 # 1. Preliminaries
 rm(list=ls())
@@ -16,16 +16,16 @@ source("./Scripts/TPME_Model_Diagnostics.R")
 # 3. Load data: vocab file, document word matrix, document edge matrix and actor covariates
 
 # choose a dataset to work with:
- load("./Data/McDowell_2011_Data.Rdata")
+#load("./Data/McDowell_2011_Data.Rdata")
 # load("./Data/New_Hannover_2011_Data.Rdata")
-# load("./Data/Transylvania_2011_Data.Rdata")
-# load("./Data/Columbus_2011_Data.Rdata")
+load("./Data/Transylvania_2011_Data.Rdata")
+#load("./Data/Columbus_2011_Data.Rdata")
 
 # 4. Run analysis for 50,000 itterations by setting equal to 50
-Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 1,Run_Sample_Step = T,output_file = "Results_Test")
+Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Transylvania_2011_3-5-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1,.01,0.001))
 
 # 5. Model Diagnostic plots 
-Generate_Model_Diagnsotics(output_file = "Current_Itteration_Results_McDowell_3-4-14",Actors = 17,Itterations = 1000, Latent_Spaces = 2, Topics = 50,LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/")
+#Generate_Model_Diagnsotics(output_file = "Current_Itteration_McDowell_2011_3-5-14",Actors = 17,Itterations = 1000, Latent_Spaces = 2, Topics = 50,LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/")
     
 
 # 5. Output and Analyze results
