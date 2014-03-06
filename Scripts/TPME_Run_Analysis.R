@@ -14,11 +14,12 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1000000, Run_Sample_Step = F, output_file = "Test"){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 200000, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01,0.001), seed = 1234){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
     require(RcppArmadillo)
+    set.seed(seed)
     Rcpp::sourceCpp("./Scripts/TPME_Metropolis_Step.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Topic_Assignment_Step.cpp")
@@ -147,8 +148,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
-        if(Metropolis_Hastings_Control_Parameter < 10){
-            Proposal_Variance <- 1/Metropolis_Hastings_Control_Parameter # this shrinks down the proposal variance to 1 as we reach the 100th itteration
+        if(Metropolis_Hastings_Control_Parameter =< length(Proposal_Variance_Vector)){
+            Proposal_Variance <- Proposal_Variance_Vector[Metropolis_Hastings_Control_Parameter] # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
         #2. Sample token topic assignments
