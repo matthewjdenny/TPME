@@ -14,7 +14,7 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 200000, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01,0.001), seed = 1234){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1000000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01,0.001), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -148,7 +148,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         
         #1. Set proposal variance for current itteration for metropolis hastings step
         Metropolis_Hastings_Control_Parameter <- Metropolis_Hastings_Control_Parameter + 1
-        if(Metropolis_Hastings_Control_Parameter =< length(Proposal_Variance_Vector)){
+        if(Metropolis_Hastings_Control_Parameter < length(Proposal_Variance_Vector) +1){
             Proposal_Variance <- Proposal_Variance_Vector[Metropolis_Hastings_Control_Parameter] # this shrinks down the proposal variance to 1 as we reach the 100th itteration
         }
         
@@ -227,13 +227,13 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         print(paste("Acceptance Rate :",accept))
         
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
-        save(Return_List, file = paste("./Output/Current_Itteration_",output_file,".Rdata",sep = ""))
+        save(Return_List, file = paste(output_folder_path,"Current_Itteration_",output_file,".Rdata",sep = ""))
         
     }#end of main loop over number of itterations
    
     if(Run_Sample_Step){
         #run final metropolis step with more itterations 
-        Metropolis_Results <- Metropolis_Step_CPP(
+        Metropolis_Results <- Metropolis_Sample_CPP(
             Number_Of_Authors, 
             Number_Of_Topics,
             Topic_Present_Edge_Counts,
@@ -246,12 +246,13 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
             Beta_Indicator_Array,
             Sample_Step_Itterations,
             Proposal_Variance,
-            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            Sample_Every
         )
         
         #get things ready to return a model object with all of the relevant info
         Return_List <- list(Metropolis_Results,Topic_Assignment_Results)
-        save(Return_List, file = paste("./Output/Sample_Step_",output_file,".Rdata",sep = ""))
+        save(Return_List, file = paste(output_folder_path,"Sample_Step_",output_file,".Rdata",sep = ""))
     }
     #save everything
 
