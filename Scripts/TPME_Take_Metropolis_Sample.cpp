@@ -46,29 +46,30 @@ List Metropolis_Sample_CPP(
     
     
     
+    
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
-    int list_length = ((4*number_of_metropolis_itterations)/sample_interval);
+    int divided_itterations = number_of_metropolis_itterations/sample_interval;
+    int list_length = (6*divided_itterations);
     List to_return(list_length);
     
     
-    double sum_log_probability_of_current_positions = 0;
-    double sum_log_probability_of_proposed_positions = 0;
-    double beta_val = 0;
-    NumericVector current_author_position(number_of_latent_dimensions);
-    NumericVector proposed_author_position(number_of_latent_dimensions);
-    NumericVector recipient_position(number_of_latent_dimensions);
+    
     int take_draw = 0;
     int sample_number = 0;
     
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_metropolis_itterations; ++i){
         
-        sum_log_probability_of_current_positions = 0;
-        sum_log_probability_of_proposed_positions = 0;
         NumericVector proposed_intercepts(number_of_topics);
         IntegerVector arrayDims4 = plp.attr("dim");
         arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix proposed_betas(number_of_topics,number_of_betas);
+        double sum_log_probability_of_current_positions = 0;
+        double sum_log_probability_of_proposed_positions = 0;
+        double beta_val = 0;
+        NumericVector current_author_position(number_of_latent_dimensions);
+        NumericVector proposed_author_position(number_of_latent_dimensions);
+        NumericVector recipient_position(number_of_latent_dimensions);
         
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
@@ -78,7 +79,7 @@ List Metropolis_Sample_CPP(
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(0,t,a),proposal_variance);
+                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
                 }
             }
             //for betas
@@ -207,9 +208,11 @@ List Metropolis_Sample_CPP(
             //if the log ratio is smaller then reject the new positions
             if(take_draw == sample_interval){
             to_return[sample_number] = current_latent_positions; 
-            to_return[number_of_metropolis_itterations+sample_number] = current_intercepts;
-            to_return[2*number_of_metropolis_itterations+sample_number] = betas;
-            to_return[3*number_of_metropolis_itterations+sample_number] = 0;
+            to_return[divided_itterations+sample_number] = current_intercepts;
+            to_return[2*divided_itterations+sample_number] = betas;
+            to_return[3*divided_itterations+sample_number] = 0;
+            to_return[4*divided_itterations+sample_number] = sum_log_probability_of_proposed_positions;
+            to_return[5*divided_itterations+sample_number] = sum_log_probability_of_current_positions;
             take_draw = 0;
             sample_number += 1;
             }
@@ -220,9 +223,11 @@ List Metropolis_Sample_CPP(
             //accept the new positions 
             if(take_draw == sample_interval){
             to_return[sample_number] = proposed_latent_positions; 
-            to_return[number_of_metropolis_itterations+sample_number] = proposed_intercepts;
-            to_return[2*number_of_metropolis_itterations+sample_number] = proposed_betas;
-            to_return[3*number_of_metropolis_itterations+sample_number] = 1;
+            to_return[divided_itterations+sample_number] = proposed_intercepts;
+            to_return[2*divided_itterations+sample_number] = proposed_betas;
+            to_return[3*divided_itterations+sample_number] = 1;
+            to_return[4*divided_itterations+sample_number] = sum_log_probability_of_proposed_positions;
+            to_return[5*divided_itterations+sample_number] =sum_log_probability_of_current_positions;
             take_draw = 0;
             sample_number += 1;
             }
