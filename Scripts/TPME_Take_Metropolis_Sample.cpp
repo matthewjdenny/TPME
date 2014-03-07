@@ -2,6 +2,7 @@
 //[[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
+    
 
 // [[Rcpp::export]]
 List Metropolis_Sample_CPP(
@@ -18,7 +19,9 @@ List Metropolis_Sample_CPP(
     int number_of_metropolis_itterations,
     double proposal_variance,
     NumericVector plp,
-    int sample_interval
+    int sample_interval,
+    int burnin,
+    double post_burnin_variance
     ){
         
     Function log_uniform_draw("log_uniform_draw");
@@ -44,15 +47,12 @@ List Metropolis_Sample_CPP(
     IntegerVector arrayDims5 = indicator_array.attr("dim");
     arma::cube beta_indicator_array(indicator_array.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
     
-    
-    
+    double variance = proposal_variance;
     
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
     int divided_itterations = number_of_metropolis_itterations/sample_interval;
     int list_length = (6*divided_itterations);
     List to_return(list_length);
-    
-    
     
     int take_draw = 0;
     int sample_number = 0;
@@ -60,31 +60,35 @@ List Metropolis_Sample_CPP(
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_metropolis_itterations; ++i){
         
-        NumericVector proposed_intercepts(number_of_topics);
-        IntegerVector arrayDims4 = plp.attr("dim");
-        arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
-        NumericMatrix proposed_betas(number_of_topics,number_of_betas);
-        double sum_log_probability_of_current_positions = 0;
-        double sum_log_probability_of_proposed_positions = 0;
+        if(i == burnin){
+            variance = post_burnin_variance;
+        }
+        
         double beta_val = 0;
         NumericVector current_author_position(number_of_latent_dimensions);
         NumericVector proposed_author_position(number_of_latent_dimensions);
         NumericVector recipient_position(number_of_latent_dimensions);
+        double sum_log_probability_of_current_positions = 0;
+        double sum_log_probability_of_proposed_positions = 0;
+        NumericVector proposed_intercepts(number_of_topics);
+        IntegerVector arrayDims4 = plp.attr("dim");
+        arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
+        NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
             double temp = current_intercepts[t];
-            proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
+            proposed_intercepts[t] = Rf_rnorm(temp,variance);
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
+                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
+                proposed_betas(t,b) = Rf_rnorm(betas(t,b),variance);
             }
         }
         
