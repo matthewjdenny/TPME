@@ -73,12 +73,12 @@ Results <- Metropolis_Sample_CPP(
     Betas,
     Number_of_Betas,
     Beta_Indicator_Array,
-    500000,
+    50000,
     0.01,
     array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
     100,
-    100000,
+    10000,
     0.001
 )
 
-unlist(Results[20001:25000])
+unlist(Results[2001:2500])
