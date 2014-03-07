@@ -14,7 +14,7 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1000000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01,0.001), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1200000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -247,7 +247,9 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
             Sample_Step_Itterations,
             Proposal_Variance,
             array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            Sample_Every
+            Sample_Every,
+            sample_step_burnin,
+            post_burin_variance
         )
         
         #get things ready to return a model object with all of the relevant info
