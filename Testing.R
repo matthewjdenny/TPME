@@ -1,6 +1,6 @@
 rm(list= ls())
 
-load("~/Dropbox/PINLab/Projects/R_Code/TPMNE/Output/Current_Itteration_McDowell_2011_3-5-14.Rdata")
+load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Current_Itteration_McDowell_2011_3-6-14.Rdata")
 
 
 print("Extracting Reduced Data")
@@ -73,10 +73,12 @@ Results <- Metropolis_Sample_CPP(
     Betas,
     Number_of_Betas,
     Beta_Indicator_Array,
-    10000,
+    500000,
     0.01,
     array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-    100
+    100,
+    100000,
+    0.001
 )
 
-
+unlist(Results[20001:25000])
