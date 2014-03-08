@@ -4,6 +4,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     #load("Current_Itteration_Results.Rdata")
     library(statnet)
     library(gregmisc)
+    library(ggplot2)
     print("Loading Data...")
     load(paste(input_folder_path,input_file,".Rdata", sep = ""))
     
@@ -74,6 +75,23 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         matplot(likelihoods, main = "Log Likelihoods of Current and Proposed Positions over Time",ylab= "Value",pch = 20)
     }
+    
+    #function to plot mean beta values over time
+    plot_beta_estimates <- function(topic){
+        betas <- matrix(0,ncol = 4, nrow = Itterations)
+        for(i in 1:Itterations){
+            betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
+        }
+        mean_se <- as.data.frame(matrix(0,nrow=4, ncol = 2))
+        mean_se <- cbind(c("M-M", "M-F","F-M", "F-F"),mean_se)
+        names(mean_se) <- c("Tie","Parameter_Estimate","SE")
+        for(j in 1:length(mean_se[,1])){
+            mean_se[j,2] <- mean(betas[,j])
+            mean_se[j,3] <- sd(betas[,j]) 
+        }
+        plot <- ggplot(mean_se, aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue"), width=.5, size = 1.3)+geom_point(fill= c("black","red", "green", "blue"),colour="black",pch=21, size = 2.2)+ labs(title = paste("Topic:",topic))
+        return(list(plot))
+    }
     # ================================================ #
               
     # ======= Generate Plots and save as PDFs =========#      
@@ -105,7 +123,60 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         par(mfrow= c(parrow,parcol))
         sapply(1:Topics,plot_Topic_Network)
         dev.off()
+        
+        #generate network plots
+        print("Plotting Beta Estimates...")
+        pdf(file=paste(out_directory,county_name,"_Beta_Estimates.pdf",sep = ""), width = Width, height = Height)
+        par(mfrow= c(parrow,parcol))
+        plots <- sapply(1:Topics,plot_beta_estimates)
+        #for(j in 1:length(plots)){
+        #    print(plots[[j]])
+        #}
+        multiplot(plotlist = plots, cols = 10)
+        dev.off()
     }
+    
+    #stolen from the R cookbook
+    multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+        require(grid)
+        
+        # Make a list from the ... arguments and plotlist
+        plots <- c(list(...), plotlist)
+        
+        numPlots = length(plots)
+        
+        # If layout is NULL, then use 'cols' to determine layout
+        if (is.null(layout)) {
+            # Make the panel
+            # ncol: Number of columns of plots
+            # nrow: Number of rows needed, calculated from # of cols
+            layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                             ncol = cols, nrow = ceiling(numPlots/cols), byrow= T)
+        }
+        
+        if (numPlots==1) {
+            print(plots[[1]])
+            
+        } else {
+            # Set up the page
+            grid.newpage()
+            pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+            
+            # Make each plot, in the correct location
+            for (i in 1:numPlots) {
+                # Get the i,j matrix positions of the regions that contain this subplot
+                matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+                
+                print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                                layout.pos.col = matchidx$col))
+            }
+        }
+    }
+    
+    
+    
+    
+    
          
     #now actually generate the plots based on the number of topics     
     if(Topics <= 25){
