@@ -19,9 +19,7 @@ List Metropolis_Sample_CPP(
     int number_of_metropolis_itterations,
     double proposal_variance,
     NumericVector plp,
-    int sample_interval,
-    int burnin,
-    double post_burnin_variance
+    int sample_interval
     ){
         
     Function log_uniform_draw("log_uniform_draw");
@@ -47,7 +45,6 @@ List Metropolis_Sample_CPP(
     IntegerVector arrayDims5 = indicator_array.attr("dim");
     arma::cube beta_indicator_array(indicator_array.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
     
-    double variance = proposal_variance;
     
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
     int divided_itterations = number_of_metropolis_itterations/sample_interval;
@@ -59,10 +56,6 @@ List Metropolis_Sample_CPP(
     
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_metropolis_itterations; ++i){
-        
-        if(i == burnin){
-            variance = post_burnin_variance;
-        }
         
         double beta_val = 0;
         NumericVector current_author_position(number_of_latent_dimensions);
@@ -79,16 +72,16 @@ List Metropolis_Sample_CPP(
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
             double temp = current_intercepts[t];
-            proposed_intercepts[t] = Rf_rnorm(temp,variance);
+            proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),variance);
+                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                proposed_betas(t,b) = Rf_rnorm(betas(t,b),variance);
+                proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
             }
         }
         
@@ -142,7 +135,7 @@ List Metropolis_Sample_CPP(
                         //calculate likelihoods for both
                         double log_prob_edge = 0;
                         double log_prob_no_edge = 0;
-                        if (eta != 0){
+                        if (eta != 0 & eta < 600 & eta > (0-600)){
                             if(eta > 0){
                                 log_prob_edge = eta -log(1 + exp(eta));
                                 log_prob_no_edge = 0 -log(1 + exp(eta));
@@ -151,6 +144,9 @@ List Metropolis_Sample_CPP(
                                 log_prob_edge = 0 -log(1 + exp(-eta));
                                 log_prob_no_edge = 0 -eta -log(1 + exp(-eta));
                             }
+                        }else{
+                            log_prob_edge = 0;
+                            log_prob_no_edge = 0;
                         }
                         
                         //multiply and add to sum
@@ -179,7 +175,7 @@ List Metropolis_Sample_CPP(
                         //calculate likelihoods for both
                         log_prob_edge = 0;
                         log_prob_no_edge = 0;
-                        if (eta != 0){
+                        if (eta != 0 & eta < 600 & eta > (0-600)){
                             if(eta > 0){
                                 log_prob_edge = eta -log(1 + exp(eta));
                                 log_prob_no_edge = 0 -log(1 + exp(eta));
@@ -188,6 +184,9 @@ List Metropolis_Sample_CPP(
                                 log_prob_edge = 0 -log(1 + exp(-eta));
                                 log_prob_no_edge = 0 -eta -log(1 + exp(-eta));
                             }
+                        }else{
+                            log_prob_edge = 0;
+                            log_prob_no_edge = 0;
                         }
                         
                         //multiply and add to sum
