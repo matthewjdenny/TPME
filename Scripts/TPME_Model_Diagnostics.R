@@ -253,9 +253,11 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         last <- cur
     }
+    for(i in 700:800){
+        print(log(exp(i)))
+    }
     
-    
-    
+    plot_intercepts(1)
      
 }#end of function definition
 
