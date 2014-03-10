@@ -145,8 +145,14 @@ List Metropolis_Sample_CPP(
                                 log_prob_no_edge = 0 -eta -log(1 + exp(-eta));
                             }
                         }else{
-                            log_prob_edge = 0;
-                            log_prob_no_edge = 0;
+                            if(eta > 0){
+                                log_prob_edge = 0;
+                                log_prob_no_edge = 0 -eta;
+                            }
+                            else{
+                                log_prob_edge = eta;
+                                log_prob_no_edge = 0;
+                            }
                         }
                         
                         //multiply and add to sum
@@ -185,8 +191,14 @@ List Metropolis_Sample_CPP(
                                 log_prob_no_edge = 0 -eta -log(1 + exp(-eta));
                             }
                         }else{
-                            log_prob_edge = 0;
-                            log_prob_no_edge = 0;
+                            if(eta > 0){
+                                log_prob_edge = 0;
+                                log_prob_no_edge = 0 -eta;
+                            }
+                            else{
+                                log_prob_edge = eta;
+                                log_prob_no_edge = 0;
+                            }
                         }
                         
                         //multiply and add to sum
