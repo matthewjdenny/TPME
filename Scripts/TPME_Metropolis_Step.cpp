@@ -133,7 +133,7 @@ List Metropolis_Step_CPP(
                         double log_prob_edge = 0;
                         double log_prob_no_edge = 0;
                         if (eta != 0){
-                            if(eta > 0){
+                            if(eta < 0){
                                 log_prob_edge = eta -log(1 + exp(eta));
                                 log_prob_no_edge = 0 -log(1 + exp(eta));
                             }
@@ -170,7 +170,7 @@ List Metropolis_Step_CPP(
                         log_prob_edge = 0;
                         log_prob_no_edge = 0;
                         if (eta != 0){
-                            if(eta > 0){
+                            if(eta < 0){
                                 log_prob_edge = eta -log(1 + exp(eta));
                                 log_prob_no_edge = 0 -log(1 + exp(eta));
                             }
