@@ -89,7 +89,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             mean_se[j,2] <- mean(betas[,j])
             mean_se[j,3] <- sd(betas[,j]) 
         }
-        plot <- ggplot(mean_se, aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue"), width=.5, size = 1.3)+geom_point(fill= c("black","red", "green", "blue"),colour="black",pch=21, size = 2.2)+ labs(title = paste("Topic:",topic))
+        plot <- ggplot(mean_se, aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue"), width=.1, size = 1.3)+geom_point(fill= c("black","red", "green", "blue"),colour="black",pch=c(21,22,23,24), size = 4)+ labs(title = paste("Topic:",topic))
         return(list(plot))
     }
     # ================================================ #
@@ -253,11 +253,6 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         last <- cur
     }
-    for(i in 700:800){
-        print(log(exp(i)))
-    }
-    
-    plot_intercepts(1)
      
 }#end of function definition
 
