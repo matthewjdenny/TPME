@@ -34,24 +34,18 @@ load("./Data/McDowell_2011_Data.Rdata")
 
 #Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "New_Hannover_2011_3-10-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 100,Proposal_Variance_Vector = c(.5,.1,.05),post_burin_variance = 0.005)
 
-Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_10K_2011_3-10-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05)
+Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_10K_2011_3-10-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05,Metropolis_Step_Itterations = 10000)
 
 # 5. Model Diagnostic plots 
-#Generate_Model_Diagnsotics(input_folder_path = "./Output/",input_file = "Sample_Step_Columbus_2011_3-5-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County")
 
-#Generate_Model_Diagnsotics(input_file = "Sample_0.05_McDowell_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_0.05_3-7-14", Thin_Itterations = 1)
+Generate_Model_Diagnsotics(input_file = "Current_Itteration_McDowell_2011_3-10-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_3-10-14", Thin_Itterations = 1)
 
-#Generate_Model_Diagnsotics(input_file = "Sample_0.05_Columbus_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County_0.05_3-7-14", Thin_Itterations = 1)
+#Generate_Model_Diagnsotics(input_file = "Current_Itteration_Columbus_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County_0.05_3-7-14", Thin_Itterations = 1)
 
-#Generate_Model_Diagnsotics(input_file = "Sample_0.05_Transylvania_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Tramnsylvania_County_0.05_3-7-14", Thin_Itterations = 1)
+#Generate_Model_Diagnsotics(input_file = "Current_Itteration_Transylvania_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Tramnsylvania_County_0.05_3-7-14", Thin_Itterations = 1)
 
 #Generate_Model_Diagnsotics(input_file = "Current_Itteration_New_Hannover_2011_3-6-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "New_Hannover_County_3-6-14", Thin_Itterations = 1)
 
-#Generate_Model_Diagnsotics(input_file = "Sample_Corrected_Columbus_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County_Corrected_3-7-14", Thin_Itterations = 1)
-
-#Generate_Model_Diagnsotics(input_file = "Sample_Corrected_Transylvania_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Tramnsylvania_County_Corrected_3-7-14", Thin_Itterations = 1)
-
-#Generate_Model_Diagnsotics(input_file = "Sample_Corrected_McDowell_2011_3-7-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_Corrected_3-7-14", Thin_Itterations = 1)
 
 
 #5 run additional sample steps:
