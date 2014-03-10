@@ -1,6 +1,6 @@
-Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100){
+Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"){
     #load the data
-    load(paste("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",input_file,".Rdata", sep = ""))
+    load(paste(data_directory,input_file,".Rdata", sep = ""))
     
     
     print("Loading Data")
