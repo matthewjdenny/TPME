@@ -20,19 +20,21 @@ source("./Scripts/TPME_Take_Sample.R")
 # 3. Load data: vocab file, document word matrix, document edge matrix and actor covariates
 
 # choose a dataset to work with:
-#load("./Data/McDowell_2011_Data.Rdata")
+load("./Data/McDowell_2011_Data.Rdata")
 #load("./Data/New_Hannover_2011_Data.Rdata")
 #load("./Data/Transylvania_2011_Data.Rdata")
-load("./Data/Columbus_2011_Data.Rdata")
+#load("./Data/Columbus_2011_Data.Rdata")
 
 # 4. Run analysis for 50,000 itterations by setting equal to 50
-#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Columbus_2011_3-7-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.01)
+#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Columbus_2011_3-10-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05)
 
-#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_2011_3-8-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.01,Metropolis_Step_Itterations = 1000)
+#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_2011_3-10-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05,Metropolis_Step_Itterations = 1000)
 
-#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Transylvania_2011_3-7-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1,.05),post_burin_variance = 0.005)
+#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Transylvania_2011_3-10-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1,.05),post_burin_variance = 0.005)
 
-#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "New_Hannover_2011_3-7-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 100,Proposal_Variance_Vector = c(.5,.1,.05),post_burin_variance = 0.005)
+#Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "New_Hannover_2011_3-10-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 100,Proposal_Variance_Vector = c(.5,.1,.05),post_burin_variance = 0.005)
+
+Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_10K_2011_3-10-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05)
 
 # 5. Model Diagnostic plots 
 #Generate_Model_Diagnsotics(input_folder_path = "./Output/",input_file = "Sample_Step_Columbus_2011_3-5-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County")
