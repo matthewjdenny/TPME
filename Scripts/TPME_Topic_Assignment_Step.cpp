@@ -109,7 +109,7 @@ List Topic_Assignment_Step_CPP(
                                 double eta = current_topic_intercept - pow(distance,.5) + beta_val;
                         
                                 double log_prob = 0;
-                                if(eta > 0){
+                                if(eta < 0){
                                     if(actual_edge == 1){
                                         log_prob = eta -log(1 + exp(eta));
                                     }
@@ -233,7 +233,7 @@ List Topic_Assignment_Step_CPP(
                         
                         double log_prob = 0;
                         if (eta != 0){
-                            if(eta > 0){
+                            if(eta < 0){
                                 if(actual_edge == 1){
                                     log_prob = eta -log(1 + exp(eta));
                                 }
