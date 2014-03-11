@@ -30,7 +30,35 @@ Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Ittera
     #calculate the efficiency of static communication networks using the method presented by: Latora, V., & Marchiori, M. (2001). Efficient Behavior of Small-World Networks. Physical Review Letters. Retrieved from http://prl.aps.org/abstract/PRL/v87/i19/e198701.
     if(method = "Latora-Machiori"){
         
+        #takes a weighted adjacency matrix as its argument
         
+        
+        
+        calculate_global_efficiency <- function(net){
+            #load igraph
+            library(igraph)
+            #create a network object
+            network <- graph.adjacency(net , mode = "undirected", weighted = TRUE)
+            #calculate the shortest path lengths between nodes in the network
+            d_ij <- shortest.paths(network,mode = "all", weights = network$weights)
+            num_nodes <- length(net[1,])
+            E_G <- 0
+            for(i in 1: num_nodes){
+                for(j in 1:num_nodes){
+                    if(i != j){
+                        E_G <- E_G + 1/d_ij[i,j]
+                    }
+                }
+            }
+            
+            #normalize
+            E_G <- E_G/(num_nodes*(num_nodes -1))
+            
+            return(E_G)
+        }
+        
+        
+        calculate_global_efficiency(net)
         
         
     }
