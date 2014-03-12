@@ -48,7 +48,7 @@ List Metropolis_Sample_CPP(
     
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
     int divided_itterations = number_of_metropolis_itterations/sample_interval;
-    int list_length = (6*divided_itterations);
+    int list_length = (7*divided_itterations);
     List to_return(list_length);
     
     int take_draw = 0;
@@ -71,8 +71,7 @@ List Metropolis_Sample_CPP(
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
-            double temp = current_intercepts[t];
-            proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
+            proposed_intercepts[t] = Rf_rnorm(current_intercepts[t],proposal_variance);
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
@@ -199,9 +198,10 @@ List Metropolis_Sample_CPP(
         
         //take the log of a uniform draw on 0 to  1
         double lud = as<double>(log_uniform_draw());
+        lud -= 0.1;
         
         take_draw += 1;
-        if(log_ratio < lud){
+        if(log_ratio < (0-1.4) ){
             //if the log ratio is smaller then reject the new positions
             if(take_draw == sample_interval){
             to_return[sample_number] = current_latent_positions; 
@@ -210,6 +210,7 @@ List Metropolis_Sample_CPP(
             to_return[3*divided_itterations+sample_number] = 0;
             to_return[4*divided_itterations+sample_number] = sum_log_probability_of_proposed_positions;
             to_return[5*divided_itterations+sample_number] = sum_log_probability_of_current_positions;
+            to_return[6*divided_itterations+sample_number] = lud;
             take_draw = 0;
             sample_number += 1;
             }
@@ -225,6 +226,7 @@ List Metropolis_Sample_CPP(
             to_return[3*divided_itterations+sample_number] = 1;
             to_return[4*divided_itterations+sample_number] = sum_log_probability_of_proposed_positions;
             to_return[5*divided_itterations+sample_number] =sum_log_probability_of_current_positions;
+            to_return[6*divided_itterations+sample_number] = lud;
             take_draw = 0;
             sample_number += 1;
             }
