@@ -1,7 +1,15 @@
 
-Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County"){
+Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County",plots_to_generate = c(1,2,3,4,5,6,7)){
     #load current results
     #load("Current_Itteration_Results.Rdata")
+    
+    
+    #plots to generate
+    
+    
+    
+    
+    
     library(statnet)
     library(gregmisc)
     library(ggplot2)
@@ -19,7 +27,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     Metropolis_Results <- Metropolis_Results[seq(1, length(Metropolis_Results),Thin_Itterations)]
     
     #get model information and extract data
-    Itterations <- length(Metropolis_Results)/6
+    Itterations <- length(Metropolis_Results)/7
     Latent_Spaces <- length(Metropolis_Results[[1]][,1,1])
     Topics <- length(Metropolis_Results[[1]][1,,1])
     Actors <- length(Metropolis_Results[[1]][1,1,])
@@ -74,6 +82,35 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             likelihoods[i,2] <- Metropolis_Results[[5*Itterations+i]]
         }
         matplot(likelihoods, main = "Log Likelihoods of Current and Proposed Positions over Time",ylab= "Value",pch = 20)
+    }
+    
+    #function to plot log ratios vs log uniform draws over time
+    plot_ratio_lud <- function(Itterations){
+        #likelihoods <- matrix(0,ncol = 2, nrow = Itterations)
+        accept <- rep(0,Itterations)
+        likelihoods <- rep(0,Itterations)
+        colors <- rep("",Itterations)
+        for(i in 1:Itterations){
+            likelihoods[i] <- Metropolis_Results[[4*Itterations+i]] - Metropolis_Results[[5*Itterations+i]] #- Metropolis_Results[[6*Itterations+i]]
+            accept[i] <- Metropolis_Results[[3*Itterations+i]]
+            if(Metropolis_Results[[3*Itterations+i]] == 1){
+                col <- "blue"
+            }else{
+                col <- "red"
+            }
+            colors[i] <- col
+            
+            accepted <- accept*likelihoods
+            accepted <- accepted[which(accept == 1)]
+            
+        }
+        #fit <- lm(accepted~1:10000)
+        print(paste("Average Accepted Prob:",mean(accepted)))
+        len <- length(accepted)
+        print(paste("Average Accepted Prob last 10 percent:",mean(accepted[(len - len/10):len])))
+        print(paste("Average Log Ratio:",mean(likelihoods)))
+        scatter.smooth(x = 1:length(accepted), y = accepted, main = "Log Likelihood Ratio of Accepted Proposals",ylab= "Value",pch = 20)
+        plot(likelihoods, main = "Red represents rejected proposals, blue represents accepted proposals",ylab= "Value",pch = 20, col = colors)
     }
     
     #function to plot mean beta values over time
@@ -244,15 +281,21 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     plot_likelihoods(Itterations) 
     dev.off()
     
+    pdf(paste(out_directory,county_name,"_Log_Ratio_LUD.pdf", sep = ""),height=8,width=12,pointsize=7)
+    par(mfrow= c(2,1))
+    plot_ratio_lud(Itterations) 
+    dev.off()
+    
+    
     #check to see if likelihood ever goes down
-    last <- -1000000000
-    for(i in 1:Itterations){
-        cur <- Metropolis_Results[[5*Itterations+i]]
-        if(cur < last){
-            print(paste("Likelihood decreased at itteration:",i,"Current:",cur,"Last:",last))
-        }
-        last <- cur
-    }
+#     last <- -1000000000
+#     for(i in 1:Itterations){
+#         cur <- Metropolis_Results[[5*Itterations+i]]
+#         if(cur < last){
+#             print(paste("Likelihood decreased at itteration:",i,"Current:",cur,"Last:",last))
+#         }
+#         last <- cur
+#     }
      
 }#end of function definition
 
