@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <random>
 //[[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
@@ -22,7 +23,7 @@ List Metropolis_Sample_CPP(
     int sample_interval
     ){
         
-    Function log_uniform_draw("log_uniform_draw");
+    //Function log_uniform_draw("log_uniform_draw");
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -33,7 +34,8 @@ List Metropolis_Sample_CPP(
     IntegerVector arrayDims3 = clp.attr("dim");
     arma::cube current_latent_positions(clp.begin(), arrayDims3[0], arrayDims3[1], arrayDims3[2], false);
     
-    
+    srand((unsigned)time(NULL));
+    std::default_random_engine generator;
     //arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
     //Create an array to hold new latent positions
     //arma::cube proposed_latent_positions = current_latent_positions;
@@ -68,19 +70,38 @@ List Metropolis_Sample_CPP(
         arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
-            proposed_intercepts[t] = Rf_rnorm(current_intercepts[t],proposal_variance);
+            //
+            std::normal_distribution<double> distribution1(current_intercepts[t],proposal_variance);
+            proposed_intercepts[t] = distribution1(generator);
+            //proposed_intercepts[t] = Rf_rnorm(current_intercepts[t],proposal_variance);
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
+                    //std::default_random_engine generator2;
+                    std::normal_distribution<double> distribution2(current_latent_positions(l,t,a),proposal_variance);
+                    proposed_latent_positions(l,t,a) = distribution2(generator);
+                    //proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
+                //std::default_random_engine generator3;
+                std::normal_distribution<double> distribution3(betas(t,b),proposal_variance);
+                proposed_betas(t,b) = distribution3(generator);
+                //proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
             }
         }
         
@@ -196,12 +217,16 @@ List Metropolis_Sample_CPP(
         //now calculate log ratio between two
         double log_ratio = sum_log_probability_of_proposed_positions - sum_log_probability_of_current_positions;
         
+        
+        double rand_num=((double)rand()/(double)RAND_MAX);
+        double lud = log(rand_num);
+
+        
         //take the log of a uniform draw on 0 to  1
-        double lud = as<double>(log_uniform_draw());
-        lud -= 0.1;
+        //double lud = as<double>(log_uniform_draw());
         
         take_draw += 1;
-        if(log_ratio < (0-1.4) ){
+        if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
             if(take_draw == sample_interval){
             to_return[sample_number] = current_latent_positions; 
