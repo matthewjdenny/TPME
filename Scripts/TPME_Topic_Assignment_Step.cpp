@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <random>
 //[[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
@@ -33,7 +34,10 @@ List Topic_Assignment_Step_CPP(
     
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
     //still need to implement check for zero tokens in document
-    Function log_multinomial_draw("log_multinomial_draw");
+    //Function log_multinomial_draw("log_multinomial_draw");
+    
+    srand((unsigned)time(NULL));
+    std::default_random_engine generator;
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -164,7 +168,15 @@ List Topic_Assignment_Step_CPP(
                     token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
                 }
                 int old_topic = token_topic_assignments1[w];
-                token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
+                
+                NumericVector topic_distribution(number_of_topics);
+                for(int x = 0; x < number_of_topics; ++x){
+                    topic_distribution[x] = exp(token_topic_distribution[x]);
+                }
+                
+                std::discrete_distribution<int> distribution (topic_distribution.begin(),topic_distribution.end());
+                token_topic_assignments1[w] = distribution(generator);
+                //token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
                 int new_topic = token_topic_assignments1[w];
                 
                 //now we need to update all of the internal counts for the same words as the current token
@@ -253,8 +265,15 @@ List Topic_Assignment_Step_CPP(
                         
                         edge_log_probabilities[w] = log_prob;
                     }
-                    int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
-                    edge_topic_assignments(d,a) = token_topic_assignments2[sampled_token-1];
+                    
+                    NumericVector edge_probabilities(number_of_tokens2);
+                    for(int x = 0; x < number_of_tokens2; ++x){
+                        edge_probabilities[x] = exp(edge_log_probabilities[x]);
+                    }
+                    std::discrete_distribution<int> distribution2 (edge_probabilities.begin(),edge_probabilities.end());
+                    int sampled_token = distribution2(generator);
+                    //int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
+                    edge_topic_assignments(d,a) = token_topic_assignments2[sampled_token];
                     
                     //if we are on the last itteration do some updating
                     if(i == (number_of_itterations -1)){
