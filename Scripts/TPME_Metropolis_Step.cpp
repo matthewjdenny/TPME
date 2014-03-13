@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <random>
 //[[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
@@ -20,7 +21,10 @@ List Metropolis_Step_CPP(
     NumericVector plp
     ){
         
-    Function log_uniform_draw("log_uniform_draw");
+    //Function log_uniform_draw("log_uniform_draw");
+    
+    srand((unsigned)time(NULL));
+    std::default_random_engine generator;
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -46,7 +50,7 @@ List Metropolis_Step_CPP(
     
     
     //this is what we return -- it must contain intercepts, betas, latent positions and whether accepted proposal for all iiterations.
-    int list_length = (6*number_of_metropolis_itterations);
+    int list_length = (7*number_of_metropolis_itterations);
     List to_return(list_length);
     
     
@@ -68,17 +72,22 @@ List Metropolis_Step_CPP(
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
-            double temp = current_intercepts[t];
-            proposed_intercepts[t] = Rf_rnorm(temp,proposal_variance);
+            std::normal_distribution<double> distribution1(current_intercepts[t],proposal_variance);
+            proposed_intercepts[t] = distribution1(generator);
+            //proposed_intercepts[t] = Rf_rnorm(current_intercepts[t],proposal_variance);
             //for latent positions
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
+                    std::normal_distribution<double> distribution2(current_latent_positions(l,t,a),proposal_variance);
+                    proposed_latent_positions(l,t,a) = distribution2(generator);
+                    //proposed_latent_positions(l,t,a) = Rf_rnorm(current_latent_positions(l,t,a),proposal_variance);
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
+                std::normal_distribution<double> distribution3(betas(t,b),proposal_variance);
+                proposed_betas(t,b) = distribution3(generator);
+                //proposed_betas(t,b) = Rf_rnorm(betas(t,b),proposal_variance);
             }
         }
         
@@ -194,8 +203,11 @@ List Metropolis_Step_CPP(
         //now calculate log ratio between two
         double log_ratio = sum_log_probability_of_proposed_positions - sum_log_probability_of_current_positions;
         
+        double rand_num=((double)rand()/(double)RAND_MAX);
+        double lud = log(rand_num);
+        
         //take the log of a uniform draw on 0 to  1
-        double lud = as<double>(log_uniform_draw());
+        //double lud = as<double>(log_uniform_draw());
         
         if(log_ratio < lud){
             //if the log ratio is smaller then reject the new positions
@@ -205,7 +217,7 @@ List Metropolis_Step_CPP(
             to_return[3*number_of_metropolis_itterations+i] = 0;
             to_return[4*number_of_metropolis_itterations+i] = sum_log_probability_of_proposed_positions;
             to_return[5*number_of_metropolis_itterations+i] = sum_log_probability_of_current_positions;
-            
+            to_return[6*number_of_metropolis_itterations+i] = lud;
             
         }
         else{
@@ -216,6 +228,7 @@ List Metropolis_Step_CPP(
             to_return[3*number_of_metropolis_itterations+i] = 1;
             to_return[4*number_of_metropolis_itterations+i] = sum_log_probability_of_proposed_positions;
             to_return[5*number_of_metropolis_itterations+i] = sum_log_probability_of_current_positions;
+            to_return[6*number_of_metropolis_itterations+i] = lud;
             //update current data structures with proposed positions
             
             
