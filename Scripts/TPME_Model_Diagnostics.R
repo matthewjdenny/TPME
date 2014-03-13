@@ -89,10 +89,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         #likelihoods <- matrix(0,ncol = 2, nrow = Itterations)
         accept <- rep(0,Itterations)
         likelihoods <- rep(0,Itterations)
+        lud <- rep(0,Itterations)
         colors <- rep("",Itterations)
         for(i in 1:Itterations){
             likelihoods[i] <- Metropolis_Results[[4*Itterations+i]] - Metropolis_Results[[5*Itterations+i]] #- Metropolis_Results[[6*Itterations+i]]
             accept[i] <- Metropolis_Results[[3*Itterations+i]]
+            lud[i] <- Metropolis_Results[[6*Itterations+i]]
             if(Metropolis_Results[[3*Itterations+i]] == 1){
                 col <- "blue"
             }else{
@@ -109,6 +111,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         len <- length(accepted)
         print(paste("Average Accepted Prob last 10 percent:",mean(accepted[(len - len/10):len])))
         print(paste("Average Log Ratio:",mean(likelihoods)))
+        print(paste("Average Log Uniform Draw:",mean(lud)))
         scatter.smooth(x = 1:length(accepted), y = accepted, main = "Log Likelihood Ratio of Accepted Proposals",ylab= "Value",pch = 20)
         plot(likelihoods, main = "Red represents rejected proposals, blue represents accepted proposals",ylab= "Value",pch = 20, col = colors)
     }
