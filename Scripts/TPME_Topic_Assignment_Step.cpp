@@ -174,8 +174,9 @@ List Topic_Assignment_Step_CPP(
                     topic_distribution[x] = exp(token_topic_distribution[x]);
                 }
                 
-                std::discrete_distribution<double> distribution (topic_distribution.begin(),topic_distribution.end());
-                token_topic_assignments1[w] = distribution(generator) +1;
+                std::discrete_distribution<int> distribution (topic_distribution.begin(),topic_distribution.end());
+                int temp = distribution(generator) +1;
+                token_topic_assignments1[w] = double (temp);
                 //token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
                 int new_topic = token_topic_assignments1[w];
                 
