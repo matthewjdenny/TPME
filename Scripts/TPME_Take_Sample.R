@@ -1,6 +1,13 @@
-Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"){
+Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux"){
     #load the data
     load(paste(data_directory,input_file,".Rdata", sep = ""))
+    
+    #if we are running linux then we need to add the appropriate c flags to use c++2011
+    if(system_OS == "Linux"){
+        PKG_CPPFLAGS = "-std=c++11"
+        Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
+    }
+    Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     
     
     print("Loading Data")
@@ -76,7 +83,9 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
         itterations,
         proposal_variance,
         array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-        sample_every
+        sample_every,
+        sample_step_burnin,
+        post_burin_variance
     )
     
     #unlist(Results[60001:72000])
