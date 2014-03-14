@@ -1,5 +1,5 @@
 
-Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County",plots_to_generate = c(1,2,3,4,5,6,7)){
+Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County",skip_first = 1){
     #load current results
     #load("Current_Itteration_Results.Rdata")
     
@@ -23,9 +23,26 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     #free up memory
     rm(Return_List)
     
+    
+    
+    
+    
+    
+    skip_first= skip_first+1
+    #remove the first skip_first itterations of each sublist and recombine
+    Itterations <- length(Metropolis_Results)/7
+    temp <- append(Metropolis_Results[skip_first:Itterations],
+                Metropolis_Results[(Itterations+skip_first):(2*Itterations)])
+    temp <- append(temp,Metropolis_Results[(2*Itterations+skip_first):(3*Itterations)])
+    temp <- append(temp,Metropolis_Results[(3*Itterations+skip_first):(4*Itterations)])
+    temp <- append(temp,Metropolis_Results[(4*Itterations+skip_first):(5*Itterations)])
+    temp <- append(temp,Metropolis_Results[(5*Itterations+skip_first):(6*Itterations)])
+    temp <- append(temp,Metropolis_Results[(6*Itterations+skip_first):(7*Itterations)])
+    Metropolis_Results <- temp
+    
     #thin out the data by taking every Thin_Itterations itteration for the metropolis step
     Metropolis_Results <- Metropolis_Results[seq(1, length(Metropolis_Results),Thin_Itterations)]
-    
+
     #get model information and extract data
     Itterations <- length(Metropolis_Results)/7
     Latent_Spaces <- length(Metropolis_Results[[1]][,1,1])
