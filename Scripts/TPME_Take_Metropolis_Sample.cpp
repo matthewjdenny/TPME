@@ -20,7 +20,9 @@ List Metropolis_Sample_CPP(
     int number_of_metropolis_itterations,
     double proposal_variance,
     NumericVector plp,
-    int sample_interval
+    int sample_interval,
+    int burnin,
+    double post_burnin_variance
     ){
         
     //Function log_uniform_draw("log_uniform_draw");
@@ -70,15 +72,10 @@ List Metropolis_Sample_CPP(
         arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        //reduce variance after burnin
+        if(i == burnin){
+            proposal_variance = post_burnin_variance;
+        }
         
         //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
         for(int t = 0; t < number_of_topics; ++t){
