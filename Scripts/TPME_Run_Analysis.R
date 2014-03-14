@@ -14,15 +14,22 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1200000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Metropolis_Step_Itterations = 1000, Sample_Step_Itterations = 1200000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux"){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
     require(RcppArmadillo)
     set.seed(seed)
+    
+    #if we are running linux then we need to add the appropriate c flags to use c++2011
+    if(system_OS == "Linux"){
+        PKG_CPPFLAGS = "-std=c++11"
+        Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
+    }
     Rcpp::sourceCpp("./Scripts/TPME_Metropolis_Step.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Topic_Assignment_Step.cpp")
+    print("Source Files Loaded...")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
@@ -44,7 +51,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     Document_Authors <- Document_Edge_Matrix[,1] #make a vector of document authors
     
     Document_Edge_Matrix <- Document_Edge_Matrix[,-1] # remove the authors from the docuemnt edge matrix
-    
+    print("Initializing Topic Assignments...")
     #token topic assignemnts are stores in a list of vectors data structure
     Token_Topic_Assignments <- list()
     for(d in 1:Number_Of_Documents){
@@ -53,7 +60,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         cur_token_assignments <- sample(1:Number_Of_Topics,sum(Document_Word_Matrix[d,]),replace= T) #samples from a discrete uniform distribution
         Token_Topic_Assignments <- append(Token_Topic_Assignments,list(cur_token_assignments))
     }
-    
+    print("Initiailizing Latent Space Positions...")
     #sample latent space postions for each actor for each topic from a uniform distribution. This will be a list of matricies data structure with rows in each matrix being the latent dimensions and columns being each topic 
     Latent_Space_Positions <- array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
     for(a in 1:Number_Of_Authors){ 
@@ -80,7 +87,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     }
     Current_Edge_Information <- test4
     Proposed_Edge_Information <- Current_Edge_Information
-    #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them. 
+    #initialize edge topic assignments. this is a matrix that indexes documents by rows and the first column is the sender number and then there is one column for ever possible sender after that with zeros indicating the message was not sent to them and 1 indicating that it was sent to them.
+    print("Initializing Edge Topic Assignments...")
     Edge_Topic_Assignments <- Document_Edge_Matrix #jsut copying it so we get the right dimensions
     #now go in and replace all ones with a sampled edge topic assignment
     for(d in 1:Number_Of_Documents){
@@ -90,6 +98,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     }
    
    #initialize a datastructure to keep a number of topics by number of unique words matrix 
+   print("Initializing Word Type Topic Counts...")
    Word_Type_Topic_Counts <- matrix(0,nrow = Number_Of_Words, ncol = Number_Of_Topics)
    #this list keeps a vector for each document of word types for each token in the same order that topic assignemnts are kept
    Token_Word_Types <- list()
@@ -114,7 +123,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
            Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] <- Word_Type_Topic_Counts[word_types[i],current_doc_assignments[i]] + 1
        }
     }
-    
+   print("Initializing Betas...")
    #initialize betas 
     Number_of_Betas <- 4
     Betas <- matrix(runif(Number_Of_Topics*Number_of_Betas),nrow =Number_Of_Topics,ncol = Number_of_Betas)
