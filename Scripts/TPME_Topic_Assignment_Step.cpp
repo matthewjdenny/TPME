@@ -34,7 +34,7 @@ List Topic_Assignment_Step_CPP(
     
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
     //still need to implement check for zero tokens in document
-    //Function log_multinomial_draw("log_multinomial_draw");
+    Function log_multinomial_draw("log_multinomial_draw");
     
     srand((unsigned)time(NULL));
     std::default_random_engine generator;
@@ -174,8 +174,8 @@ List Topic_Assignment_Step_CPP(
                     topic_distribution[x] = exp(token_topic_distribution[x]);
                 }
                 
-                std::discrete_distribution<int> distribution (topic_distribution.begin(),topic_distribution.end());
-                token_topic_assignments1[w] = distribution(generator);
+                std::discrete_distribution<double> distribution (topic_distribution.begin(),topic_distribution.end());
+                token_topic_assignments1[w] = distribution(generator) +1;
                 //token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
                 int new_topic = token_topic_assignments1[w];
                 
@@ -272,16 +272,16 @@ List Topic_Assignment_Step_CPP(
                     }
                     std::discrete_distribution<int> distribution2 (edge_probabilities.begin(),edge_probabilities.end());
                     int sampled_token = distribution2(generator);
-                    //int sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
+                    //sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
                     edge_topic_assignments(d,a) = token_topic_assignments2[sampled_token];
                     
                     //if we are on the last itteration do some updating
                     if(i == (number_of_itterations -1)){
                         if(actual_edge == 1){
-                            topic_present_edge_counts(document_author,a,(token_topic_assignments2[(sampled_token-1)] -1)) +=1;
+                            topic_present_edge_counts(document_author,a,(token_topic_assignments2[sampled_token] -1)) +=1;
                         }
                         else{
-                            topic_absent_edge_counts(document_author,a,(token_topic_assignments2[(sampled_token-1)] -1)) +=1;
+                            topic_absent_edge_counts(document_author,a,(token_topic_assignments2[sampled_token] -1)) +=1;
                         } 
                     }//end update if statement
                     
