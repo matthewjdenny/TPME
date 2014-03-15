@@ -23,7 +23,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     
     #if we are running linux then we need to add the appropriate c flags to use c++2011
     if(system_OS == "Linux"){
-        PKG_CPPFLAGS = "-std=c++11"
+        #PKG_CPPFLAGS = "-std=c++11"
+        PKG_CPPFLAGS = "-std=c++0x"
         Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
     }
     Rcpp::sourceCpp("./Scripts/TPME_Metropolis_Step.cpp")
