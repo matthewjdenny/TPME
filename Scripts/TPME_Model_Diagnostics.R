@@ -327,15 +327,15 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     
     
     #Establish Ordering 
-    ordering <- order(Email_Assignments, decreasing = FALSE)
-    Email_Assignments <- Email_Assignments[ordering]
-    Top_Ten_Words <- Top_Ten_Words[ordering]
+    #ordering <- order(Email_Assignments, decreasing = FALSE)
+    #Email_Assignments <- Email_Assignments[ordering]
+    #Top_Ten_Words <- Top_Ten_Words[ordering]
     
     
     
     pdf(paste(out_directory,county_name,"_Top_Words.pdf", sep = ""),height=12,width=10,pointsize=7)
     par(mfrow= c(1,1))
-    bp <- barplot2(Email_Assignments, beside = TRUE, horiz = TRUE, col = "lightblue1", border= "lightblue1", ylab = "Topic", xlab = "Number of Edges Assigned to Topic",main = paste("Top Words by Number of Words Assigned to Topic for ",county_name,sep = "")) 
+    bp <- barplot2(Email_Assignments, beside = TRUE, horiz = TRUE, col = "lightblue1", border= "lightblue1", ylab = "Topic:", xlab = "Number of Edges Assigned to Topic",main = paste("Top Words by Number of Words Assigned to Topic for ",county_name,sep = "")) 
     text(0,bp,Top_Ten_Words,cex=1,pos=4)# label on the bars themselves 
     dev.off()
     
