@@ -5,11 +5,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     
     
     #plots to generate
-    
-    
-    
-    
-    
+    library(coda)
     library(statnet)
     library(gregmisc)
     library(ggplot2)
@@ -66,7 +62,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         for(i in 1:Itterations){
             intercepts[i] <- Metropolis_Results[[Itterations+i]][intercept]
         }
-        plot(intercepts, main = paste("Topic:",intercept),ylab= "Value",pch = 20)
+        plot(intercepts, main = paste("Topic:",intercept,"Geweke:",round(geweke.diag(intercepts)$z,2)),ylab= "Value",pch = 20)
     }
     #function to plot betas over time
     plot_betas <- function(topic){
@@ -74,7 +70,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         for(i in 1:Itterations){
             betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
         }
-        matplot(betas, main = paste("Topic:",topic),ylab= "Value",pch = 20)
+        matplot(betas, main = paste("Topic:",topic,"Geweke","\n - MM:",round(geweke.diag(betas[,1])$z,2) , "MF:",round(geweke.diag(betas[,2])$z,2) ,"\n FM:"round(geweke.diag(betas[,3])$z,2) ,"FF:",round(geweke.diag(betas[,4])$z,2)),ylab= "Value",pch = 20)
     }
     #function to plot latent spaces for a given actor
     plot_LS_Positions <- function(topic){
@@ -83,7 +79,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             LSP[i,] <- Metropolis_Results[[i]][,topic,LS_Actor]
         }
         corel <- cor(LSP[,1], LSP[,2])
-        matplot(LSP, main = paste("Topic:",topic, "\n LS Correlations:", round(corel,3)),ylab= "Value",pch = 20)
+        matplot(LSP, main = paste("Topic:",topic, "\n LS Correlations:", round(corel,3),"\n Geweke - LS1:",round(geweke.diag(LSP[,1])$z,2),"LS2:",round(geweke.diag(LSP[,2])$z,2)),ylab= "Value",pch = 20)
     }
     plot_Topic_Network <- function(topic){
         slice <- Topic_Present_Edge_Counts[,,topic]
