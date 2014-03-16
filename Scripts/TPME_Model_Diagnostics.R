@@ -2,11 +2,11 @@
 Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County",skip_first = 1){
     #load current results
     #load("Current_Itteration_Results.Rdata")
-    
+    #for testing load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
     
     #plots to generate
     library(coda)
-    library(statnet)
+    #library(statnet)
     library(gregmisc)
     library(ggplot2)
     print("Loading Data...")
@@ -50,6 +50,50 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     Word_Type_Topic_Counts <- Topic_Model_Results[[4]]
     Edge_Topic_Assignments <- Topic_Model_Results[[5]]
     
+    
+    #get the total number of tokens assigned to each topic
+    Topic_Token_Totals <- apply(Word_Type_Topic_Counts,2,sum)
+    #get the total number of present edges assigned to each topic
+    Email_Assignments <- apply(Topic_Present_Edge_Counts,3,sum)
+    #number of words
+    num_words <- length(vocab)
+    
+    
+    #this list will be used to store lists of three vectors: word indicies in descending order of likelihood, word probability in topic, actual word. 
+    Topic_Top_Words <- list()
+    Top_Ten_Words <- rep("",Topics)
+    Top_Four_Words <- rep("",Topics)
+    
+    
+    for(i in 1:Topics){
+        indicies <- order(Word_Type_Topic_Counts[,i],decreasing = TRUE)
+        probabilities <- Word_Type_Topic_Counts[indicies,i]/Topic_Token_Totals[i]
+        #reduce to only words with non-zero probability
+        indicies <- indicies[which(probabilities > 0)]
+        probabilities <- probabilities[which(probabilities > 0)]
+        top_words <- vocab[indicies,]
+        Topic_List <- list(top_words,probabilities,indicies)
+        Topic_Top_Words <- append(Topic_Top_Words,list(Topic_List))
+        #add top words
+        words <- ""
+        words4 <- ""
+        for(j in 1:10){
+            words <- paste(words,top_words[j],", ",sep = "")
+        }
+        for(j in 1:4){
+            words4 <- paste(words4,top_words[j],", ",sep = "")
+        }
+        Top_Ten_Words[i] <- words
+        Top_Four_Words[i] <- words4
+    }
+    
+    
+    
+    
+    
+    
+    
+    
     #display current accept rate
     start <- (3*Itterations) + 1
     end <- 4*Itterations
@@ -70,7 +114,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         for(i in 1:Itterations){
             betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
         }
-        matplot(betas, main = paste("Topic:",topic,"Geweke","\n - MM:",round(geweke.diag(betas[,1])$z,2) , "MF:",round(geweke.diag(betas[,2])$z,2) ,"\n FM:"round(geweke.diag(betas[,3])$z,2) ,"FF:",round(geweke.diag(betas[,4])$z,2)),ylab= "Value",pch = 20)
+        matplot(betas, main = paste("Topic:",topic,"Geweke","\n MM:",round(geweke.diag(betas[,1])$z,2) , "MF:",round(geweke.diag(betas[,2])$z,2) ,"\n FM:",round(geweke.diag(betas[,3])$z,2) ,"FF:",round(geweke.diag(betas[,4])$z,2)),ylab= "Value",pch = 20)
     }
     #function to plot latent spaces for a given actor
     plot_LS_Positions <- function(topic){
@@ -83,8 +127,35 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     }
     plot_Topic_Network <- function(topic){
         slice <- Topic_Present_Edge_Counts[,,topic]
-        net <- as.network(slice)
-        plot(net, main = paste("Topic:",topic,"Number of Edges:",sum(slice)),pch = 20)
+        coordinates <- cbind(Metropolis_Results[[Itterations]][1,topic,],Metropolis_Results[[Itterations]][2,topic,])
+        coordinates <- as.data.frame(coordinates)
+        plot(coordinates,main = paste("Topic:",topic,"Number of Edges:",sum(slice),"\n", Top_Four_Words[topic]),pch = 20, col = "red")
+        #add in lines between actors
+        for(i in 1:Actors){
+            for(j in 1:Actors){
+                if(slice[i,j] >0){
+                    lines(c(coordinates[i,1],coordinates[j,1]) , c(coordinates[i,2],coordinates[j,2]), col = "black")
+                }
+            }
+        }
+        
+    }
+    
+    #make plots will all top words for one per page output
+    plot_Topic_Network_Full <- function(topic){
+        slice <- Topic_Present_Edge_Counts[,,topic]
+        coordinates <- cbind(Metropolis_Results[[Itterations]][1,topic,],Metropolis_Results[[Itterations]][2,topic,])
+        coordinates <- as.data.frame(coordinates)
+        plot(coordinates,main = paste("Topic:",topic,"Number of Edges:",sum(slice),"\n", Top_Ten_Words[topic]),pch = 20, col = "red")
+        #add in lines between actors
+        for(i in 1:Actors){
+            for(j in 1:Actors){
+                if(slice[i,j] >0){
+                    lines(c(coordinates[i,1],coordinates[j,1]) , c(coordinates[i,2],coordinates[j,2]), col = "black")
+                }
+            }
+        }
+        
     }
     
     #function to plot log likelihoods over time
@@ -177,6 +248,15 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         sapply(1:Topics,plot_Topic_Network)
         dev.off()
         
+        
+        #generate network plots one per page
+        print("Plotting Networks...")
+        pdf(file=paste(out_directory,county_name,"_Network_Plots_Full_Page.pdf",sep = ""), width = Width, height = Height)
+        par(mfrow= c(1,1))
+        sapply(1:Topics,plot_Topic_Network_Full)
+        dev.off()
+        
+        
         #generate network plots
         print("Plotting Beta Estimates...")
         pdf(file=paste(out_directory,county_name,"_Beta_Estimates.pdf",sep = ""), width = Width, height = Height)
@@ -225,12 +305,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             }
         }
     }
-    
-    
-    
-    
-    
-         
+     
     #now actually generate the plots based on the number of topics     
     if(Topics <= 25){
         make_plots(12,12,5,5)
@@ -248,35 +323,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     # ======= Now generate top words and topic model diagnostics ====== #
     
     print("Generating Topic Model Output")
-    #get the total number of tokens assigned to each topic
-    Topic_Token_Totals <- apply(Word_Type_Topic_Counts,2,sum)
-    #get the total number of present edges assigned to each topic
-    Email_Assignments <- apply(Topic_Present_Edge_Counts,3,sum)
-    #number of words
-    num_words <- length(vocab)
     
-    
-    #this list will be used to store lists of three vectors: word indicies in descending order of likelihood, word probability in topic, actual word. 
-    Topic_Top_Words <- list()
-    Top_Ten_Words <- rep("",Topics)
-    
-    
-    for(i in 1:Topics){
-        indicies <- order(Word_Type_Topic_Counts[,i],decreasing = TRUE)
-        probabilities <- Word_Type_Topic_Counts[indicies,i]/Topic_Token_Totals[i]
-        #reduce to only words with non-zero probability
-        indicies <- indicies[which(probabilities > 0)]
-        probabilities <- probabilities[which(probabilities > 0)]
-        top_words <- vocab[indicies,]
-        Topic_List <- list(top_words,probabilities,indicies)
-        Topic_Top_Words <- append(Topic_Top_Words,list(Topic_List))
-        #add top words
-        words <- ""
-        for(j in 1:10){
-            words <- paste(words,top_words[j],", ",sep = "")
-        }
-        Top_Ten_Words[i] <- words
-    }
     
     
     #Establish Ordering 
