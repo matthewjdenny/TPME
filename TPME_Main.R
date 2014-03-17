@@ -22,7 +22,7 @@ source("./Scripts/TPME_Take_Sample.R")
 # 3. Load data: vocab file, document word matrix, document edge matrix and actor covariates
 
 # choose a dataset to work with:
-load("./Data/McDowell_2011_Data.Rdata")
+#load("./Data/McDowell_2011_Data.Rdata")
 
 #load("./Data/New_Hannover_2011_Data.Rdata")
 load("./Data/Transylvania_2011_Data.Rdata")
@@ -50,7 +50,9 @@ load("./Data/Transylvania_2011_Data.Rdata")
 
 #Generate_Model_Diagnsotics(input_file = "Sample_Step_Columbus_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Columbus_County_Sample_10_3-13-14", Thin_Itterations = 1,skip_first = 2000)
 
-Generate_Model_Diagnsotics(input_file = "Transylvania_Sample_10M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Transylvania_County_Sample_10M_3-13-14", Thin_Itterations = 1,skip_first = 6000)
+Generate_Model_Diagnsotics(input_file = "Transylvania_Sample_10M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Transylvania_County_Sample_10M_3-13-14", Thin_Itterations = 1,skip_first = 6200)
+
+#Generate_Model_Diagnsotics(input_file = "McDowell_Sample_10M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_Sample_10M_3-13-14", Thin_Itterations = 1,skip_first = 6200)
 
 
 #5 run additional sample steps:
@@ -59,11 +61,21 @@ Generate_Model_Diagnsotics(input_file = "Transylvania_Sample_10M_2011_3-13-14",L
 
 #Run_Sample_Step(input_file = "Current_Itteration_Columbus_2011_3-13-14",data_source = "Columbus_2011_Data", output_file = "Columbus_Sample_10M_2011_3-13-14", itterations = 10200000, proposal_variance = 0.1,sample_every = 1000,sample_step_burnin = 200000,post_burin_variance = 0.02, system_OS = "Linux")
 
-#Run_Sample_Step(input_file = "Current_Itteration_Transylvania_2011_3-13-14",data_source = "Transylvania_2011_Data", output_file = "Transylvania_Sample_10M_2011_3-13-14", itterations = 10200000, proposal_variance = 0.1,sample_every = 1000,sample_step_burnin = 200000,post_burin_variance = 0.02, system_OS = "Linux")
+Run_Sample_Step(input_file = "Current_Itteration_Transylvania_2011_3-13-14",data_source = "Transylvania_2011_Data", output_file = "Transylvania_Sample_50M_2011_3-13-14", itterations = 50200000, proposal_variance = 0.1,sample_every = 1000,sample_step_burnin = 200000,post_burin_variance = 0.05, system_OS = "Linux")
 
 
 
 
 
 # 5. Output and Analyze results
+Calculate_Network_Efficiency_Statistics(input_file = "Transylvania_Sample_10M_2011_3-13-14", output_file = "Transylvania_10M_2011_3-13-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", method = "Latora-Machiori",Thin_Itterations = 1,skip_first = 6200)
+
+Calculate_Network_Efficiency_Statistics(input_file = "McDowell_Sample_10M_2011_3-13-14", output_file = "McDowell_10M_2011_3-13-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", method = "Latora-Machiori",Thin_Itterations = 1,skip_first = 6200)
+
+
+
+
+
+
+
 
