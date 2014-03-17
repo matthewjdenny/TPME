@@ -349,16 +349,9 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     plot_ratio_lud(Itterations) 
     dev.off()
     
+    print("Outputing topic network dataset..")
     
-    #check to see if likelihood ever goes down
-#     last <- -1000000000
-#     for(i in 1:Itterations){
-#         cur <- Metropolis_Results[[5*Itterations+i]]
-#         if(cur < last){
-#             print(paste("Likelihood decreased at itteration:",i,"Current:",cur,"Last:",last))
-#         }
-#         last <- cur
-#     }
+  
      
 }#end of function definition
 
