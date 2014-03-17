@@ -1,7 +1,7 @@
 Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14", output_file = "McDowell_2011_3-7-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", method = "Latora-Machiori",Thin_Itterations = 1,skip_first = 6200){
     
     #rm(list = ls())
-    #for testing load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
+    #load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
     #Thin_Itterations = 1
     #skip_first = 6200
     
@@ -132,10 +132,16 @@ Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Ittera
         scatter.smooth(x= beta_averages[,3], y= efficiencies,pch =20, col = "red", main = paste("Female-Male Mixing Parameter Estimates vs. Tie Weighted Network Efficiency \n", "Pearson Correlation Test p-value:",round(cor.test(beta_averages[,3],efficiencies)$p.value,3)), ylab = "Per-Tie Efficiency", xlab = "Topic Specific Parameter Estimate")
         scatter.smooth(x= beta_averages[,4], y= efficiencies,pch =20, col = "red", main = paste("Female-Female Mixing Parameter Estimates vs. Tie Weighted Network Efficiency \n", "Pearson Correlation Test p-value:",round(cor.test(beta_averages[,4],efficiencies)$p.value,3)), ylab = "Per-Tie Efficiency", xlab = "Topic Specific Parameter Estimate")
         dev.off()
-    }
     
     
+    #now run a regression of betas on efficiency
+    dat <- cbind(efficiencies,beta_averages)
     
+    dat <- as.data.frame(dat)
+    names(dat) <- c("Tie_Efficiency","MM", "MF","FM", "FF")
+    
+    print(summary(lm("Tie_Efficiency~ MM + MF + FM + FF", data = dat)))
+    }#end of latora-machiori method
     
 }#end of function definition
     
