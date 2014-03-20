@@ -36,21 +36,27 @@ List Topic_Assignment_Step_CPP(
     //still need to implement check for zero tokens in document
     Function log_multinomial_draw("log_multinomial_draw");
     
+    //set seed and designate RNG
     srand((unsigned)time(NULL));
     std::default_random_engine generator;
     
+    //read in topic present edge counts array [num actors x num actors x topics]
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
     
+    //read in topic absent edge counts array [num actors x num actors x topics]
     IntegerVector arrayDims2 = taec.attr("dim");
     arma::cube topic_absent_edge_counts(taec.begin(), arrayDims2[0], arrayDims2[1], arrayDims2[2], false);
     
+    //read in latent positions array [num dimensions x topics x actors]
     IntegerVector arrayDims3 = clp.attr("dim");
     arma::cube current_latent_positions(clp.begin(), arrayDims3[0], arrayDims3[1], arrayDims3[2], false);
     
-    IntegerVector arrayDims5 = indicator_array.attr("dim");
+    //read in beta indicator array (0,1) [number of topics x number of actors x number of betas]
+    IntegerVector arrayDims5 = indicator_array.attr("dim"); 
     arma::cube beta_indicator_array(indicator_array.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
 
+    //initialize variables that will be used across iterations
     double beta_val = 0;
     NumericVector current_author_position(number_of_latent_dimensions);
     NumericVector recipient_position(number_of_latent_dimensions);
@@ -68,17 +74,21 @@ List Topic_Assignment_Step_CPP(
             int number_of_tokens = token_topic_assignments1.length();
             NumericVector token_word_types = token_word_type_list[d];
             
-            
+            //loop over tokens
             for(int w = 0; w < number_of_tokens; ++w){
-                //int token = w + 1;
                 
-                
+                //initialize token topic distribution vector
                 NumericVector token_topic_distribution(number_of_topics);
+                
+                //loop over topics
                 for(int t = 0; t < number_of_topics; ++t){
                     int topic = t + 1;
                     
+                    //get current author latent positions (could be updated to run in a loop)
                     current_author_position[0] = current_latent_positions(0,t,document_author);
                     current_author_position[1] = current_latent_positions(1,t,document_author);
+                    
+                    //get current topic betas and intercepts
                     double current_topic_intercept = current_intercepts[t];
                     NumericVector current_topic_betas = betas.row(t);
                     //this calculates the addition to the probability that the token was sampled from the topic by
@@ -86,10 +96,12 @@ List Topic_Assignment_Step_CPP(
                     double additional_edge_probability = 0;
                     for(int a = 0; a < number_of_actors; ++a){
                         
+                        //no self loops
                         if(document_author != a){
                             
+                            //get whether or not there was an observed edge
                             int actual_edge = observed_edges(d,a);
-                            
+                            //get the edge's current topic assignment
                             int edge_assignment = edge_topic_assignments(d,a); 
                             //int edge_assignment = as<int>(get_edge_topic_assignment(document, actor));
                             if(edge_assignment == topic){
@@ -106,6 +118,7 @@ List Topic_Assignment_Step_CPP(
                                 }
                         
                                 beta_val = 0;
+                                //pull out the correct beta value 
                                 for(int c = 0; c < number_of_betas; ++c){
                                     beta_val += current_topic_betas[c]*beta_indicator_array(document_author,a,c);
                                 }
@@ -136,6 +149,7 @@ List Topic_Assignment_Step_CPP(
                     
                     
                     //now we calculate the first and second terms in the likelihood of of the token being from the current topic
+                    //calculate the number of times a token in the current document has been assigned to the current topic
                     int ntd = 0;
                     for(int b = 0; b < number_of_tokens; ++b){
                         if(b != w){
@@ -144,43 +158,50 @@ List Topic_Assignment_Step_CPP(
                             }
                         }
                     }
-                    //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
+                    
                     int current_word = token_word_types[w] -1;
+                    //get the number of times this word type has been assigned in the current topic
                     int wttac = token_type_topic_counts(current_word,t);
+                    //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
                     //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
                     
+                    //number of tokens assigned to the topic
                     int ntt = topic_token_sums[t];
+                    //subtract one from these counts if the current token was assigned to this topic
                     if(topic == token_topic_assignments1[w]){
                         ntt -= 1;
                         wttac -=1;
                     }
                     
-                    //hack to make things work until I can find the problem
+                    //helps deal with wierd initializations by no allowing negative counts
                     if(wttac < 0){
                         wttac = 0;
                     }
                     //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
-                    //double first_term = ntd + (alpha_m[t]/number_of_topics);
                     double first_term = ntd + alpha_m[t];
                     double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
                     
-                    
+                    //combine terms and add to conditional posterior distribution
                     token_topic_distribution[t] = log(first_term) + log(second_term) + additional_edge_probability;
                 }
+                //save old topic asignemnt
                 int old_topic = token_topic_assignments1[w];
                 
+                //generate the un-logged distribution to sample from
                 NumericVector topic_distribution(number_of_topics);
                 for(int x = 0; x < number_of_topics; ++x){
                     topic_distribution[x] = exp(token_topic_distribution[x]);
                 }
-                
+                //use the above to initialize a discrete distribution
                 std::discrete_distribution<int> distribution (topic_distribution.begin(),topic_distribution.end());
+                //take an integer topic assignment draw from the distribtuion (needed to work with some c++ compilers)
                 int temp = distribution(generator) +1;
-                token_topic_assignments1[w] = double (temp);
+                //cast the integer draw as a double so it can be assigned to token topic assignemnt vector
+                token_topic_assignments1[w] = double (temp); 
                 //token_topic_assignments1[w] = as<double>(log_multinomial_draw(token_topic_distribution));        
                 int new_topic = token_topic_assignments1[w];
                 
-                //now we need to update all of the internal counts for the same words as the current token
+                //now we need to update all of the internal counts for the same words as the current token if we sampled a new assignment
                 if(old_topic != new_topic){
                     topic_token_sums[(old_topic-1)] -=1;
                     topic_token_sums[(new_topic-1)] += 1;
