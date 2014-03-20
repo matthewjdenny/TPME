@@ -1,4 +1,4 @@
-Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14", output_file = "McDowell_2011_3-7-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", method = "Latora-Machiori",Thin_Itterations = 1,skip_first = 6200){
+Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14", output_file = "McDowell_2011_3-7-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", method = "Latora-Machiori",Thin_Itterations = 1,skip_first = 6200, vocab = vocabulary){
     
     #rm(list = ls())
     #load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
@@ -88,7 +88,7 @@ Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Ittera
             return(mean_se[,2])
         }
         
-        #takes a weighted adjacency matrix as its argument
+        #takes a weighted adjacency matrix as its argument (note that this is edgewise so the efficeincy score is divided by the number of edges)
         calculate_global_efficiency <- function(net){
             #load igraph
             library(igraph)
@@ -141,6 +141,15 @@ Calculate_Network_Efficiency_Statistics <- function(input_file = "Current_Ittera
     names(dat) <- c("Tie_Efficiency","MM", "MF","FM", "FF")
     
     print(summary(lm("Tie_Efficiency~ MM + MF + FM + FF", data = dat)))
+    
+    
+    #generate dataset for analysis
+    transpose <- t(Word_Type_Topic_Counts)
+    efficiency_data <- cbind(dat,transpose)
+    names(efficiency_data) <- c("Tie_Efficiency","MM", "MF","FM", "FF",vocab )
+    save(efficiency_data,file=paste(data_directory,output_file,"Efficiency_Data.Rdata"))
+    
+    
     }#end of latora-machiori method
     
 }#end of function definition
