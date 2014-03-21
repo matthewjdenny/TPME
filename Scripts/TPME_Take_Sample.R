@@ -1,4 +1,4 @@
-Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux"){
+Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux", sampler = c("Slice","Metropolis"), slice_sample_step_size = 1){
     #load the data
     load(paste(data_directory,input_file,".Rdata", sep = ""))
     
@@ -8,11 +8,12 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
         Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
     }
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
+    Rcpp::sourceCpp("./Scripts/TPME_Take_Slice_Sample.cpp")
     
     
     print("Loading Data")
     #extract current metropolis results
-    Metropolis_Results <- Return_List[[1]]
+    Sample_Results <- Return_List[[1]]
     Topic_Model_Results <- Return_List[[2]]
     #free up memory
     rm(Return_List)
@@ -31,17 +32,17 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
     }
     
     #get model information and extract data
-    Latent_Dimensions <- length(Metropolis_Results[[1]][,1,1])
-    Number_Of_Topics <- length(Metropolis_Results[[1]][1,,1])
-    Number_Of_Authors <- length(Metropolis_Results[[1]][1,1,])
+    Latent_Dimensions <- length(Sample_Results[[1]][,1,1])
+    Number_Of_Topics <- length(Sample_Results[[1]][1,,1])
+    Number_Of_Authors <- length(Sample_Results[[1]][1,1,])
     Token_Topic_Assignments <- Topic_Model_Results[[1]]
     Topic_Present_Edge_Counts <- Topic_Model_Results[[2]]
     Topic_Absent_Edge_Counts <- Topic_Model_Results[[3]]
     Word_Type_Topic_Counts <- Topic_Model_Results[[4]]
     Edge_Topic_Assignments <- Topic_Model_Results[[5]]
-    Latent_Space_Positions <- Metropolis_Results[[1000]]
-    Latent_Space_Intercepts <- Metropolis_Results[[2*1000]]
-    Betas <- Metropolis_Results[[3*1000]]
+    Latent_Space_Positions <- Sample_Results[[1000]]
+    Latent_Space_Intercepts <- Sample_Results[[2*1000]]
+    Betas <- Sample_Results[[3*1000]]
     
     require(RcppArmadillo)
     set.seed(1234)
@@ -69,24 +70,48 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
     }
     
     print("Running Model")
-    Results <- Metropolis_Sample_CPP(
-        Number_Of_Authors, 
-        Number_Of_Topics,
-        Topic_Present_Edge_Counts,
-        Topic_Absent_Edge_Counts,
-        Latent_Space_Positions,
-        Latent_Space_Intercepts,
-        Latent_Dimensions,
-        Betas,
-        Number_of_Betas,
-        Beta_Indicator_Array,
-        itterations,
-        proposal_variance,
-        array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-        sample_every,
-        sample_step_burnin,
-        post_burin_variance
-    )
+    if(sampler == "Slice"){
+        Results <- Slice_Sample_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            Topic_Present_Edge_Counts,
+            Topic_Absent_Edge_Counts,
+            Latent_Space_Positions,
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            Final_Sample_Step_Itterations,
+            slice_sample_step_size,
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            Sample_Every
+        )
+        
+        
+    }
+    
+    if(sampler == "Metropolis"){
+        #run final metropolis step with more itterations 
+        Results <- Metropolis_Sample_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            Topic_Present_Edge_Counts,
+            Topic_Absent_Edge_Counts,
+            Latent_Space_Positions,
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            Final_Sample_Step_Itterations,
+            Proposal_Variance,
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            Sample_Every,
+            sample_step_burnin,
+            post_burin_variance
+        )
+    }
     
     #unlist(Results[60001:72000])
     print("Saving Results")
