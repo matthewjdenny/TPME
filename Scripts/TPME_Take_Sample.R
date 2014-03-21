@@ -1,4 +1,4 @@
-Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux", sampler = c("Slice","Metropolis"), slice_sample_step_size = 1){
+Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-14",data_source = "McDowell_2011_Data", output_file = "Sample_McDowell_2011_3-7-14", itterations = 1200000, proposal_variance = 0.01,sample_every = 100, data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux", sampler = c("Slice","Metropolis", "Block"), slice_sample_step_size = 1, within_block_iterations = 1){
     #load the data
     load(paste(data_directory,input_file,".Rdata", sep = ""))
     
@@ -9,7 +9,11 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
     }
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Slice_Sample.cpp")
+    Rcpp::sourceCpp('Scripts/TPME_Take_Block_Slice_Sample.cpp')
     
+    Report_Probs <- function(proposed, current, part){
+        print(paste("Proposed Probability:",proposed,"Current Probability:",current, "Part:", part) )
+    }
     
     print("Loading Data")
     #extract current metropolis results
@@ -82,13 +86,11 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            Final_Sample_Step_Itterations,
+            itterations,
             slice_sample_step_size,
             array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            Sample_Every
+            sample_every
         )
-        
-        
     }
     
     if(sampler == "Metropolis"){
@@ -104,13 +106,35 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            Final_Sample_Step_Itterations,
+            itterations,
             Proposal_Variance,
             array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            Sample_Every,
+            ample_every,
             sample_step_burnin,
             post_burin_variance
         )
+    }
+    
+    if(sampler == "Block"){
+        Results <- Block_Slice_Sample_CPP(
+            Number_Of_Authors, 
+            Number_Of_Topics,
+            Topic_Present_Edge_Counts,
+            Topic_Absent_Edge_Counts,
+            Latent_Space_Positions,
+            Latent_Space_Intercepts,
+            Latent_Dimensions,
+            Betas,
+            Number_of_Betas,
+            Beta_Indicator_Array,
+            itterations,
+            slice_sample_step_size,
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            sample_every,
+            within_block_iterations
+        )
+        
+        
     }
     
     #unlist(Results[60001:72000])
