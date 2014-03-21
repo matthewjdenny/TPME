@@ -166,7 +166,11 @@ List Slice_Sample_CPP(
         }
         
         int in_slice = 0; 
-        while(in_slice < 1){
+        //int max_tries = 10;
+        //int tries = 0;
+        //& tries < max_tries
+        while(in_slice < 1 ){
+            //tries +=1;
             
             //get new values for the slice for intercepts,latent positions, betas  
             for(int t = 0; t < number_of_topics; ++t){
