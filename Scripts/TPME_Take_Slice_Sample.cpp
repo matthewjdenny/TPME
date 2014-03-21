@@ -5,7 +5,7 @@ using namespace Rcpp;
 
 
 // [[Rcpp::export]]
-List Slice_Sample_Step_CPP(
+List Slice_Sample_CPP(
     int number_of_actors, 
     int number_of_topics,
     NumericVector tpec,
