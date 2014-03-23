@@ -92,7 +92,11 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
             itterations,
             slice_sample_step_size,
             array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            sample_every
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+            sample_every,
+            sample_step_burnin,
+            post_burnin_step_size
         )
     }
     
