@@ -19,11 +19,17 @@ List Slice_Sample_CPP(
     int number_of_itterations,
     double step_size,
     NumericVector plp,
-    int sample_interval
+    NumericVector llp,
+    NumericVector rlp,
+    int sample_interval,
+    int burnin,
+    double post_burnin_step_size
     ){
  
     srand((unsigned)time(NULL));
     std::default_random_engine generator;
+    
+    Function report("Report_Probs");
     
     IntegerVector arrayDims1 = tpec.attr("dim");
     arma::cube topic_present_edge_counts(tpec.begin(), arrayDims1[0], arrayDims1[1], arrayDims1[2], false);
@@ -59,6 +65,10 @@ List Slice_Sample_CPP(
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_itterations; ++i){
         
+        if(i == burnin){
+            step_size = post_burnin_step_size;
+        }
+        
         NumericVector current_author_position(number_of_latent_dimensions);
         NumericVector proposed_author_position(number_of_latent_dimensions);
         NumericVector recipient_position(number_of_latent_dimensions);
@@ -67,6 +77,7 @@ List Slice_Sample_CPP(
         NumericVector proposed_intercepts(number_of_topics);
         IntegerVector arrayDims4 = plp.attr("dim");
         arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
+        
         NumericMatrix proposed_betas(number_of_topics,number_of_betas);
         
         
@@ -138,29 +149,31 @@ List Slice_Sample_CPP(
         //now go ahead and define hte slice for which we will be unifromly sampling new values from 
         //we need a left and right value
         NumericVector left_intercepts(number_of_topics);
-        arma::cube left_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix left_betas(number_of_topics,number_of_betas);
         NumericVector right_intercepts(number_of_topics);
-        arma::cube right_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
         NumericMatrix right_betas(number_of_topics,number_of_betas);
+        IntegerVector arrayDims5 = llp.attr("dim");
+        arma::cube left_latent_positions(llp.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
+        IntegerVector arrayDims6 = rlp.attr("dim");
+        arma::cube right_latent_positions(rlp.begin(), arrayDims6[0], arrayDims6[1], arrayDims6[2], false);
         
         //get the left and right bounds on the slice for intercepts,latent positions, betas  
         for(int t = 0; t < number_of_topics; ++t){
             //for intercepts
-            rand_num=((double)rand()/(double)RAND_MAX);
-            left_intercepts[t] = current_intercepts[t] - rand_num*step_size;
+            double rand_num0=((double)rand()/(double)RAND_MAX);
+            left_intercepts[t] = current_intercepts[t] - rand_num0*step_size;
             right_intercepts[t] = left_intercepts[t] + step_size;
             for(int a = 0; a < number_of_actors; ++a){
                 for(int l = 0; l < number_of_latent_dimensions; ++l){
-                    rand_num=((double)rand()/(double)RAND_MAX);
-                    left_latent_positions(l,t,a) = current_latent_positions(l,t,a) - rand_num*step_size;
+                    double rand_num1=((double)rand()/(double)RAND_MAX);
+                    left_latent_positions(l,t,a) = current_latent_positions(l,t,a) - rand_num1*step_size;
                     right_latent_positions(l,t,a) = left_latent_positions(l,t,a) + step_size;
                 }
             }
             //for betas
             for(int b = 0; b < number_of_betas; ++b){
-                rand_num=((double)rand()/(double)RAND_MAX);
-                left_betas(t,b) = betas(t,b) - rand_num*step_size;
+                double rand_num2=((double)rand()/(double)RAND_MAX);
+                left_betas(t,b) = betas(t,b) - rand_num2*step_size;
                 right_betas(t,b) = left_betas(t,b) + step_size;
             }
         }
@@ -175,18 +188,18 @@ List Slice_Sample_CPP(
             //get new values for the slice for intercepts,latent positions, betas  
             for(int t = 0; t < number_of_topics; ++t){
                 //for intercepts
-                rand_num=((double)rand()/(double)RAND_MAX);
-                proposed_intercepts[t] =  left_intercepts[t] + rand_num*(right_intercepts[t] -left_intercepts[t]);
+                double rand_num3=((double)rand()/(double)RAND_MAX);
+                proposed_intercepts[t] =  left_intercepts[t] + rand_num3*(right_intercepts[t] -left_intercepts[t]);
                 for(int a = 0; a < number_of_actors; ++a){
                     for(int l = 0; l < number_of_latent_dimensions; ++l){
-                        rand_num=((double)rand()/(double)RAND_MAX);
-                        proposed_latent_positions(l,t,a) =  left_latent_positions(l,t,a) + rand_num*(right_latent_positions(l,t,a) - left_latent_positions(l,t,a));
+                        double rand_num4=((double)rand()/(double)RAND_MAX);
+                        proposed_latent_positions(l,t,a) =  left_latent_positions(l,t,a) + rand_num4*(right_latent_positions(l,t,a) - left_latent_positions(l,t,a));
                     }
                 }
                 //for betas
                 for(int b = 0; b < number_of_betas; ++b){
-                    rand_num=((double)rand()/(double)RAND_MAX);
-                    proposed_betas(t,b) = left_betas(t,b) + rand_num*(right_betas(t,b) - left_betas(t,b));
+                    double rand_num5=((double)rand()/(double)RAND_MAX);
+                    proposed_betas(t,b) = left_betas(t,b) + rand_num5*(right_betas(t,b) - left_betas(t,b));
                 }
             }    
             
@@ -298,6 +311,7 @@ List Slice_Sample_CPP(
         //update all values
         take_draw += 1;
         if(take_draw == sample_interval){
+            report(sample_number);
             to_return[sample_number] = proposed_latent_positions; 
             to_return[divided_itterations+sample_number] = proposed_intercepts;
             to_return[2*divided_itterations+sample_number] = proposed_betas;
