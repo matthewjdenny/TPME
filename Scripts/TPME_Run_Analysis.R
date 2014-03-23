@@ -14,7 +14,7 @@ log_uniform_draw <- function(){
 
 
 
-Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Sample_Step_Itterations = 1000, Final_Sample_Step_Itterations = 1200000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux", sampler = c("Slice","Metropolis"), slice_sample_step_size = 1){
+Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1000, Sample_Step_Itterations = 1000, Final_Sample_Step_Itterations = 1200000,Sample_Every = 100, Run_Sample_Step = F, output_file = "Test",Proposal_Variance_Vector = c(.5,.1,.01), seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,post_burin_variance = 0.01, system_OS = "Linux", sampler = c("Slice","Metropolis","Block"), slice_sample_step_size = 1,post_burnin_step_size = 0.5, within_block_iterations = 1){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -30,7 +30,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
     Rcpp::sourceCpp("./Scripts/TPME_Metropolis_Step.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Topic_Assignment_Step.cpp")
-    Rcpp::sourceCpp("./Scripts/TPME_Slice_Sample_Step.cpp")
+    Rcpp::sourceCpp("./Scripts/TPME_Block_Slice_Sample_Step.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Slice_Sample.cpp")
     print("Source Files Loaded...")
     
@@ -207,8 +207,8 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
         
         #3. Perform MEtropolis step jointly for intercepts, latent positions and betas (not currently implemented)
         #calculate new latent positions, intercepts and betas
-        if(sampler == "Slice"){
-            Sample_Results <- Slice_Sample_Step_CPP(
+        if(sampler == "Block"){
+            Sample_Results <- Block_Slice_Step_CPP(
                 Number_Of_Authors, 
                 Number_Of_Topics,
                 Topic_Present_Edge_Counts,
@@ -219,9 +219,13 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
                 Betas,
                 Number_of_Betas,
                 Beta_Indicator_Array,
-                Metropolis_Step_Itterations,
+                Sample_Step_Itterations,
                 slice_sample_step_size,
-                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                1,
+                within_block_iterations
             ) 
         }
         
@@ -237,7 +241,7 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
                 Betas,
                 Number_of_Betas,
                 Beta_Indicator_Array,
-                Metropolis_Step_Itterations,
+                Sample_Step_Itterations,
                 Proposal_Variance,
                 array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
             ) 
@@ -305,6 +309,30 @@ Run_Analysis <- function(Number_Of_Iterations = 50, Base_Alpha =1, Base_Beta = 0
                 Sample_Every,
                 sample_step_burnin,
                 post_burin_variance
+            )
+        }
+        
+        if(sampler == "Block"){
+            Results <- Block_Slice_Sample_CPP(
+                Number_Of_Authors, 
+                Number_Of_Topics,
+                Topic_Present_Edge_Counts,
+                Topic_Absent_Edge_Counts,
+                Latent_Space_Positions,
+                Latent_Space_Intercepts,
+                Latent_Dimensions,
+                Betas,
+                Number_of_Betas,
+                Beta_Indicator_Array,
+                Final_Sample_Step_Itterations,
+                slice_sample_step_size,
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
+                Sample_Every,
+                within_block_iterations,
+                sample_step_burnin,
+                post_burnin_step_size
             )
         }
         
