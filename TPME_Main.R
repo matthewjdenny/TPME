@@ -63,7 +63,7 @@ Generate_Model_Diagnsotics(input_file = "McDowell_Slice_Test_3-13-14",LS_Actor =
 
 #5 run additional sample steps:
 
-Run_Sample_Step(input_file = "Current_Itteration_McDowell_2011_3-13-14",data_source = "McDowell_2011_Data", output_file = "McDowell_Slice_Test_3-13-14", itterations = 100, proposal_variance = 0.25,sample_every = 1,sample_step_burnin = 200000,post_burin_variance = 0.2, system_OS = "Mac", sampler = "Block", slice_sample_step_size = 0.001)
+Run_Sample_Step(input_file = "Current_Itteration_McDowell_2011_3-13-14",data_source = "McDowell_2011_Data", output_file = "McDowell_Slice_Test_3-13-14", itterations = 20000, proposal_variance = 0.25,sample_every = 20,sample_step_burnin = 10000,post_burin_variance = 0.2, system_OS = "Mac", sampler = "Block", slice_sample_step_size = 1,post_burnin_step_size = 0.5)
 
 #Run_Sample_Step(input_file = "Current_Itteration_Columbus_2011_3-13-14",data_source = "Columbus_2011_Data", output_file = "Columbus_Sample_10M_2011_3-13-14", itterations = 10200000, proposal_variance = 0.1,sample_every = 1000,sample_step_burnin = 200000,post_burin_variance = 0.02, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
 
