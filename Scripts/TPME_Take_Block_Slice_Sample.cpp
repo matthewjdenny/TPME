@@ -539,7 +539,7 @@ List Block_Slice_Sample_CPP(
                 for(int a = 0; a < number_of_actors; ++a){
                     for(int l = 0; l < number_of_latent_dimensions; ++l){
                         double rand_num1=((double)rand()/(double)RAND_MAX);
-                        left_latent_positions(l,t,a) = current_latent_positions(l,t,a) - rand_num*step_size;
+                        left_latent_positions(l,t,a) = current_latent_positions(l,t,a) - rand_num1*step_size;
                         right_latent_positions(l,t,a) = left_latent_positions(l,t,a) + step_size;
                     }
                 }
