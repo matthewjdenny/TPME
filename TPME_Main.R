@@ -58,12 +58,12 @@ Generate_Model_Diagnsotics(input_file = "Sample_Step_New_Hannover_2011_3-13-14",
 
 #Generate_Model_Diagnsotics(input_file = "McDowell_Sample_10M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_Sample_10M_3-13-14", Thin_Itterations = 1,skip_first = 6200)
 
-Generate_Model_Diagnsotics(input_file = "McDowell_Slice_Test_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_Slice_Test_3-13-14", Thin_Itterations = 1,skip_first = 1)
+Generate_Model_Diagnsotics(input_file = "McDowell_Slice_Test_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_Slice_Test_3-13-14", Thin_Itterations = 1,skip_first = 200)
 
 
 #5 run additional sample steps:
 
-Run_Sample_Step(input_file = "Current_Itteration_McDowell_2011_3-13-14",data_source = "McDowell_2011_Data", output_file = "McDowell_Slice_Test_3-13-14", itterations = 20000, proposal_variance = 0.25,sample_every = 20,sample_step_burnin = 10000,post_burin_variance = 0.2, system_OS = "Mac", sampler = "Block", slice_sample_step_size = 1,post_burnin_step_size = 0.5)
+Run_Sample_Step(input_file = "Current_Itteration_McDowell_2011_3-13-14",data_source = "McDowell_2011_Data", output_file = "McDowell_Slice_Test_3-13-14", itterations = 100000, proposal_variance = 0.25,sample_every = 100,sample_step_burnin = 20000,post_burin_variance = 0.2, system_OS = "Mac", sampler = "Block", slice_sample_step_size = 1,post_burnin_step_size = 0.5)
 
 #Run_Sample_Step(input_file = "Current_Itteration_Columbus_2011_3-13-14",data_source = "Columbus_2011_Data", output_file = "Columbus_Sample_10M_2011_3-13-14", itterations = 10200000, proposal_variance = 0.1,sample_every = 1000,sample_step_burnin = 200000,post_burin_variance = 0.02, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
 
