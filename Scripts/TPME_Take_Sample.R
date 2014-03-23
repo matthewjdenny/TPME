@@ -8,9 +8,7 @@ Run_Sample_Step <- function(input_file = "Current_Itteration_McDowell_2011_3-7-1
         Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
     }
     
-    Report_Probs <- function(current){
-        print(paste("Current Save Itteration:",current) )
-    }
+    
     
     Rcpp::sourceCpp("./Scripts/TPME_Take_Metropolis_Sample.cpp")
     Rcpp::sourceCpp("./Scripts/TPME_Take_Slice_Sample.cpp")
