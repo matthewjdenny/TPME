@@ -19,8 +19,12 @@ List Block_Slice_Sample_CPP(
     int number_of_itterations,
     double step_size,
     NumericVector plp,
+    NumericVector llp,
+    NumericVector rlp,
     int sample_interval,
-    int within_block_iterations
+    int within_block_iterations,
+    int burnin,
+    double post_burnin_step_size
     ){
  
     srand((unsigned)time(NULL));
@@ -63,6 +67,10 @@ List Block_Slice_Sample_CPP(
     //loop over the number of metropolis itterations (default 1000)
     for(int i = 0; i < number_of_itterations; ++i){
         
+        if(i == burnin){
+            step_size = post_burnin_step_size;
+        }
+        
         NumericVector current_author_position(number_of_latent_dimensions);
         NumericVector proposed_author_position(number_of_latent_dimensions);
         NumericVector recipient_position(number_of_latent_dimensions);
@@ -78,6 +86,8 @@ List Block_Slice_Sample_CPP(
         // ===================== BETA ====================== //
         
         //Sample new betas
+        int samp1 = 1;
+        if(samp1 > 0){
         for(int z = 0; z < within_block_iterations; ++z){
             NumericMatrix proposed_betas(number_of_topics,number_of_betas);
             NumericMatrix right_betas(number_of_topics,number_of_betas);
@@ -231,8 +241,8 @@ List Block_Slice_Sample_CPP(
                     }
                 }
                 
-                int part = 3;
-                report(sum_log_probability_of_proposed_positions, slice_probability_floor,part);
+                //int part = 3;
+                //report(sum_log_probability_of_proposed_positions, slice_probability_floor,part);
             
                 if(sum_log_probability_of_proposed_positions > slice_probability_floor){
                     in_slice = 1;
@@ -258,11 +268,13 @@ List Block_Slice_Sample_CPP(
             //update current data structures with proposed positions
             betas = proposed_betas;
         }
-        
+        }
 
         // ====================  INTERCEPTS =====================//
         
         //Sample new intercepts
+        int samp2 = 1;
+        if(samp2 > 0){
         for(int z = 0; z < within_block_iterations; ++z){
             
             NumericVector left_intercepts(number_of_topics);
@@ -411,8 +423,8 @@ List Block_Slice_Sample_CPP(
                         }
                     }
                 }
-                int part = 1;
-                report(sum_log_probability_of_proposed_positions, slice_probability_floor, part);
+                //int part = 1;
+                //report(sum_log_probability_of_proposed_positions, slice_probability_floor, part);
                 
                 if(sum_log_probability_of_proposed_positions > slice_probability_floor){
                     in_slice = 1;
@@ -435,7 +447,7 @@ List Block_Slice_Sample_CPP(
             //update current data structures with proposed positions
             current_intercepts = proposed_intercepts;
         }
-        
+        }
         // ================== LATENT SPACE ==================== //
         
         
@@ -444,11 +456,15 @@ List Block_Slice_Sample_CPP(
         
         
         //Sample new latent space positions
+        int samp3 = 1;
+        if(samp3 > 0){
         for(int z = 0; z < within_block_iterations; ++z){
             IntegerVector arrayDims4 = plp.attr("dim");
             arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
-            arma::cube left_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
-            arma::cube right_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
+            IntegerVector arrayDims5 = llp.attr("dim");
+            arma::cube left_latent_positions(llp.begin(), arrayDims5[0], arrayDims5[1], arrayDims5[2], false);
+            IntegerVector arrayDims6 = rlp.attr("dim");
+            arma::cube right_latent_positions(rlp.begin(), arrayDims6[0], arrayDims6[1], arrayDims6[2], false);
 
             // =================== Current Position Probability ==================== //
             //calculate the likelihood of the current position
@@ -604,8 +620,8 @@ List Block_Slice_Sample_CPP(
                         }
                     }
                 }
-                int part = 2;
-                report(sum_log_probability_of_proposed_positions, slice_probability_floor,part);
+                //int part = 2;
+                //report(sum_log_probability_of_proposed_positions, slice_probability_floor,part);
             
                 if(sum_log_probability_of_proposed_positions > slice_probability_floor){
                     in_slice = 1;
@@ -632,13 +648,14 @@ List Block_Slice_Sample_CPP(
             //update current data structures with proposed positions
             current_latent_positions = proposed_latent_positions;
         }
-        
+        }
         
         
     
         //update all values
         take_draw += 1;
         if(take_draw == sample_interval){
+            report(sample_number);
             to_return[sample_number] = current_latent_positions; 
             to_return[divided_itterations+sample_number] = current_intercepts;
             to_return[2*divided_itterations+sample_number] = betas;
