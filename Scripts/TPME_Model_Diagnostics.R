@@ -1,5 +1,5 @@
 
-Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 20, vocab = vocabulary,county_name = "McDowell_County",skip_first = 1){
+Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1, vocab = vocabulary,county_name = "McDowell_County",skip_first = 1000){
     #load current results
     #load("Current_Itteration_Results.Rdata")
     #for testing load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
@@ -56,8 +56,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     #get the total number of present edges assigned to each topic
     Email_Assignments <- apply(Topic_Present_Edge_Counts,3,sum)
     #number of words
-    num_words <- length(vocab)
-    
+    num_words <- length(vocab[,1])
     
     #this list will be used to store lists of three vectors: word indicies in descending order of likelihood, word probability in topic, actual word. 
     Topic_Top_Words <- list()
@@ -165,7 +164,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             likelihoods[i,1] <- Metropolis_Results[[4*Itterations+i]]
             likelihoods[i,2] <- Metropolis_Results[[5*Itterations+i]]
         }
-        matplot(likelihoods, main = "Log Likelihoods of Current and Proposed Positions over Time",ylab= "Value",pch = 20)
+        matplot(likelihoods, main = paste("Log Likelihoods of Current and Proposed Positions over Time \n Geweke Statistic:", round(geweke.diag(likelihoods[,1])$z,2)),ylab= "Value",pch = 20)
     }
     
     #function to plot log ratios vs log uniform draws over time
@@ -217,7 +216,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         return(list(plot))
     }
     # ================================================ #
-              
+         
+    pdf(paste(out_directory,county_name,"_Likelihoods.pdf", sep = ""),height=8,width=12,pointsize=7)
+    par(mfrow= c(1,1))
+    plot_likelihoods(Itterations) 
+    dev.off()
+    
     # ======= Generate Plots and save as PDFs =========#      
     make_plots <- function(Width, Height, parrow,parcol){
         #generate pdf of intercepts
@@ -339,20 +343,119 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     text(0,bp,Top_Ten_Words,cex=1,pos=4)# label on the bars themselves 
     dev.off()
     
-    pdf(paste(out_directory,county_name,"_Likelihoods.pdf", sep = ""),height=8,width=12,pointsize=7)
-    par(mfrow= c(1,1))
-    plot_likelihoods(Itterations) 
-    dev.off()
+    
     
     pdf(paste(out_directory,county_name,"_Log_Ratio_LUD.pdf", sep = ""),height=8,width=12,pointsize=7)
     par(mfrow= c(2,1))
     plot_ratio_lud(Itterations) 
     dev.off()
     
-    print("Outputing topic network dataset..")
+    print("Outputing Geweke statistics..")
     
-  
-     
+    intercept_list <- list()
+    beta_list <- list()
+    LS_list <- list()
+    t= 1
+    for(t in 1:Topics){
+        print(paste("Current Topic: ", t))
+        #Intercepts
+        intercepts <- rep(0,Itterations)
+        for(i in 1:Itterations){
+            intercepts[i] <- Metropolis_Results[[Itterations+i]][t]
+        }
+        int <- as.numeric(geweke.diag(intercepts)$z)
+        intercept_list <- append(intercept_list,int)
+        
+        #Betas
+        betas <- matrix(0,ncol = 4, nrow = Itterations)
+        for(i in 1:Itterations){
+            betas[i,] <- Metropolis_Results[[2*Itterations+i]][t,]
+        }
+        bets <- rep(0,4)
+        for(i in 1:4){
+            bets[i] <- as.numeric(geweke.diag(betas[,i])$z)
+        } 
+        beta_list <- append(beta_list,bets)
+        
+        #Latent Space Positions
+        lat <- matrix(0,nrow=Actors, ncol= Latent_Spaces)
+        for(a in 1:Actors){
+            LSP <- matrix(0,nrow=Itterations, ncol= Latent_Spaces)
+            for(i in 1:Itterations){
+                LSP[i,] <- Metropolis_Results[[i]][,t,a]
+            }
+            #calcaulte statistic
+            for(j in 1:Latent_Spaces){
+                lat[a,j] <- as.numeric(geweke.diag(LSP[,j])$z)
+            }
+        }
+        LS_list <- append(LS_list,lat)
+        
+    }
+    
+    ints <- length(which(abs(unlist(intercept_list)) < 1.645))
+    print(paste("Percent Intercepts Converged ($z < 1.645$):",ints/length(intercept_list), "Number:", ints))
+    
+    
+    bets <- length(which(abs(unlist(beta_list)) < 1.645))
+    print(paste("Percent Betas Converged ($z < 1.645$):",bets/length(beta_list), "Number:", bets))
+    
+    ls <- length(which(abs(unlist(LS_list)) < 1.645))
+    print(paste("Percent LS Positions Converged ($z < 1.645$):",ls/length(LS_list), "Number:", ls))
+    
+    total <- ints + bets +ls
+    print(paste("Percent All Parameters Converged ($z < 1.645$):",total/(length(beta_list)+ length(LS_list) + length(intercept_list)), "Number:", total))
+    
+    
+    #generate asortativity - token dataset
+    print("Generating topic- token- assortativity dataset")
+    get_beta_estimates <- function(topic){
+        betas <- matrix(0,ncol = 4, nrow = Itterations)
+        for(i in 1:Itterations){
+            betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
+        }
+        mean_se <- as.data.frame(matrix(0,nrow=4, ncol = 2))
+        mean_se <- cbind(c("M-M", "M-F","F-M", "F-F"),mean_se)
+        names(mean_se) <- c("Tie","Parameter_Estimate","SE")
+        for(j in 1:length(mean_se[,1])){
+            mean_se[j,2] <- mean(betas[,j])
+            mean_se[j,3] <- sd(betas[,j]) 
+        }
+        return(mean_se[,2:3])
+    }
+    
+    beta_averages <- matrix(0, ncol = 4,nrow = Topics)
+    beta_se <- matrix(0, ncol = 4,nrow = Topics)
+    for(i in 1:Topics){
+        result <- get_beta_estimates(i)
+        beta_averages[i,] <- result[,1]
+        beta_se[i,] <- result[,2]
+        
+    }
+    
+    #generate dataset for analysis
+    transpose <- t(Word_Type_Topic_Counts)
+    
+    probs <- matrix(0, ncol = num_words, nrow = Topics)
+    for(i in 1:Topics){
+        probs[i,] <- Word_Type_Topic_Counts[,i]/Topic_Token_Totals[i] 
+    }
+    topic_data <- cbind(beta_averages,beta_se,transpose,probs)
+    topic_data <- as.data.frame(topic_data)
+    
+    prob_vocab <- as.vector(vocab[,1])
+    append_prob <- function(str){
+        return(paste("PR-",str,sep = ""))
+    }
+    temp <- as.vector(sapply(prob_vocab,append_prob))
+    vec <- c("MM", "MF","FM", "FF","MM-SE", "MF-SE","FM-SE", "FF-SE",as.vector(vocab[,1]) ,temp)
+    names(topic_data) <- vec
+    save(topic_data,file=paste(out_directory ,county_name,"Topic_Assortativity_Data.Rdata"))
+    
+    
+    
+    
+    
 }#end of function definition
 
 
