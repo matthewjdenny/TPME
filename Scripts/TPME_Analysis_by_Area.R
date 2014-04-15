@@ -23,27 +23,27 @@ topic_data_mcd <- cbind(codings[,2],topic_data)
 data_list <- list(topic_data_col, topic_data_nhc, topic_data_tran, topic_data_mcd)
 counties <- c("Columbus", "New Hannover", "Transylvania", "McDowell")
 #
-i = 2
+i = 4
 for(i in 1:4){
-#     #for coordination topics
-#     temp <- data_list[[i]]
-#     coord <- temp[which(temp[,1] == 4),]
-#     aves_sd_coord <- matrix(0,nrow =4,ncol = 2)
-#     for(j in 1:4){
-#         aves_sd_coord[j,1] <- mean(coord[,j+1])
-#         aves_sd_coord[j,2] <- mean(coord[,j+5])    
-#     }
-#     aves_sd_all <- matrix(0,nrow =4,ncol = 2)
-#     for(j in 1:4){
-#         aves_sd_all[j,1] <- mean(temp[,j+1])
-#         aves_sd_all[j,2] <- mean(temp[,j+5])    
-#     }
-#     aves_sd <- rbind(aves_sd_coord,aves_sd_all)
-#     aves_sd <- as.data.frame(aves_sd)
-#     aves_sd <- cbind(c("M-M", "M-F","F-M", "F-F","M-M (All)", "M-F (All)","F-M (All)", "F-F (All)"),aves_sd)
-#     aves_sd <- as.data.frame(aves_sd)
-#     names(aves_sd) <- c("Tie","Parameter_Estimate","SE")
-#     plot <- ggplot(aves_sd[1:8,], aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue","grey","pink", "lightgreen", "lightblue"), width=.1, size = 1.3)+geom_point(fill= c("black","red", "green", "blue","grey","pink", "lightgreen", "lightblue"),colour="black",pch=c(21,22,23,24,21,22,23,24), size = 4)+ labs(title = paste(counties[i],"County Asortativity Comparison for Coordination vs. All Topics") )
+    #for coordination topics
+    temp <- data_list[[i]]
+    coord <- temp[which(temp[,1] == 4),]
+    aves_sd_coord <- matrix(0,nrow =4,ncol = 2)
+    for(j in 1:4){
+        aves_sd_coord[j,1] <- mean(coord[,j+1])
+        aves_sd_coord[j,2] <- mean(coord[,j+5])    
+    }
+    aves_sd_all <- matrix(0,nrow =4,ncol = 2)
+    for(j in 1:4){
+        aves_sd_all[j,1] <- mean(temp[,j+1])
+        aves_sd_all[j,2] <- mean(temp[,j+5])    
+    }
+    aves_sd <- rbind(aves_sd_coord,aves_sd_all)
+    aves_sd <- as.data.frame(aves_sd)
+    aves_sd <- cbind(c("M-M", "M-F","F-M", "F-F","M-M (All)", "M-F (All)","F-M (All)", "F-F (All)"),aves_sd)
+    aves_sd <- as.data.frame(aves_sd)
+    names(aves_sd) <- c("Tie","Parameter_Estimate","SE")
+    plot <- ggplot(aves_sd[1:8,], aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue","grey","pink", "lightgreen", "lightblue"), width=.1, size = 1.3)+geom_point(fill= c("black","red", "green", "blue","grey","pink", "lightgreen", "lightblue"),colour="black",pch=c(21,22,23,24,21,22,23,24), size = 4)+ labs(title = paste(counties[i],"County Asortativity Comparison for Coordination vs. All Topics") )
 #     
 #     #now for broadcast topics
 #     temp <- data_list[[i]]
