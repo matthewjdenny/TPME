@@ -433,6 +433,52 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         
     }
     
+    
+    topic_intercepts <- matrix(0,ncol = 2,nrow= Topics)
+    for(t in 1:Topics){
+        intercepts <- rep(0,Itterations)
+        for(i in 1:Itterations){
+            intercepts[i] <- Metropolis_Results[[Itterations+i]][t]
+        }
+        topic_intercepts[t,1] <- mean(intercepts)
+        topic_intercepts[t,2] <- sd(intercepts)
+    }
+    
+    topic_average_distances <- rep(0,Topics)
+    for(t in 1:Topics){
+        print(paste("Calculating topic latent space average distance:",t))
+        #slice <- Topic_Present_Edge_Counts[,,t]
+        coordinates <- matrix(0,ncol = Latent_Spaces,nrow = Actors)
+        for(i in 1:Actors){
+            tem<- rep(0 ,Itterations)
+            for(k in 1:Itterations){
+                tem[k] <- Metropolis_Results[[k]][1,t,i]
+            }
+            coordinates[i,1] <- mean(tem)
+            tem2<- rep(0 ,Itterations)
+            for(k in 1:Itterations){
+                tem2[k] <- Metropolis_Results[[k]][2,t,i]
+            }
+            coordinates[i,2] <- mean(tem2)
+        }
+        #coordinates <- cbind(mean(Metropolis_Results[1:Itterations][1,t,]),mean(Metropolis_Results[1:Itterations][2,t,]))
+        dist <- 0
+        for(a in 1:Actors){
+            for(b in 1:Actors){
+                if(a != b){
+                    for(l in 1:Latent_Spaces){
+                        dis <- (coordinates[a,1] - coordinates[b,2])^2
+                    }
+                    dist <- dist + sqrt(dis)
+                }
+            }
+        }
+        dist <- dist/(Actors*(Actors -1))
+        topic_average_distances[t] <- dist
+    }
+    
+    
+    
     #generate dataset for analysis
     transpose <- t(Word_Type_Topic_Counts)
     
@@ -440,7 +486,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
     for(i in 1:Topics){
         probs[i,] <- Word_Type_Topic_Counts[,i]/Topic_Token_Totals[i] 
     }
-    topic_data <- cbind(beta_averages,beta_se,transpose,probs)
+    topic_data <- cbind(topic_intercepts,topic_average_distances,beta_averages,beta_se,transpose,probs)
     topic_data <- as.data.frame(topic_data)
     
     prob_vocab <- as.vector(vocab[,1])
@@ -448,9 +494,9 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         return(paste("PR-",str,sep = ""))
     }
     temp <- as.vector(sapply(prob_vocab,append_prob))
-    vec <- c("MM", "MF","FM", "FF","MM-SE", "MF-SE","FM-SE", "FF-SE",as.vector(vocab[,1]) ,temp)
+    vec <- c("Intercept","Intercept-SE","Average_LS_Distance","MM", "MF","FM", "FF","MM-SE", "MF-SE","FM-SE", "FF-SE",as.vector(vocab[,1]) ,temp)
     names(topic_data) <- vec
-    save(topic_data,file=paste(out_directory ,county_name,"Topic_Assortativity_Data.Rdata"))
+    save(topic_data,file=paste(out_directory ,county_name,"Topic_Assortativity_Data.Rdata", sep = ""))
     
     
     
