@@ -136,22 +136,31 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
         }
     }
     
+    
+    #Assign topics to clusters
+    Topic_Cluster_Assignments <- rep(0,Number_Of_Topics)
+    
     #==================== MAIN Function ====================#                             
         
         Return_List <- Cluster_Integrated_Sampler(
+            Number_Of_Iterations,
+            Topic_Step_Itterations,
+            Sample_Step_Itterations,
             Number_Of_Authors, 
             Number_Of_Topics,
+            Number_of_Clusters,
+            Latent_Dimensions,
+            Number_Of_Documents,
+            Proposal_Variance,
+            Topic_Cluster_Assignments,
             array(0,c(Number_Of_Authors,Number_Of_Authors,Number_Of_Topics)),
             array(0,c(Number_Of_Authors,Number_Of_Authors,Number_Of_Topics)),
             Latent_Space_Positions, 
+            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
             Latent_Space_Intercepts,
-            Latent_Dimensions,
             Betas,
             Number_of_Betas,
             Beta_Indicator_Array,
-            Topic_Step_Itterations,
-            Proposal_Variance,
-            Number_Of_Documents,
             as.matrix(Document_Edge_Matrix),
             Token_Topic_Assignments,
             Token_Word_Types,
@@ -162,39 +171,8 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
             Word_Type_Topic_Counts,
             apply(Word_Type_Topic_Counts,2,sum),
             Number_Of_Words
-            Number_Of_Authors, 
-            Number_Of_Topics,
-            Topic_Present_Edge_Counts,
-            Topic_Absent_Edge_Counts,
-            Latent_Space_Positions,
-            Latent_Space_Intercepts,
-            Latent_Dimensions,
-            Betas,
-            Number_of_Betas,
-            Beta_Indicator_Array,
-            Sample_Step_Itterations,
-            slice_sample_step_size,
-            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors)),
-           
-     
-            Number_Of_Authors, 
-            Number_Of_Topics,
-            Topic_Present_Edge_Counts,
-            Topic_Absent_Edge_Counts,
-            Latent_Space_Positions,
-            Latent_Space_Intercepts,
-            Latent_Dimensions,
-            Betas,
-            Number_of_Betas,
-            Beta_Indicator_Array,
-            Sample_Step_Itterations,
-            Proposal_Variance,
-            array(0,c(Latent_Dimensions,Number_Of_Topics,Number_Of_Authors))
-           
-        
-        
+        )
+
         #get things ready to return a model object with all of the relevant info 
         save(Return_List, file = paste(output_folder_path,"Model_Output_",output_file,".Rdata",sep = ""))
     
