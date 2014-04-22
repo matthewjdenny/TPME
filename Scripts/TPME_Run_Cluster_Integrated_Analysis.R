@@ -139,6 +139,9 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
     
     #Assign topics to clusters
     Topic_Cluster_Assignments <- rep(0,Number_Of_Topics)
+    for(k in 1:Number_Of_Topics){
+        Topic_Cluster_Assignments[k] <- round(runif(1, min = 1, max = Number_of_Clusters),0)
+    }
     
     #==================== MAIN Function ====================#                             
         
