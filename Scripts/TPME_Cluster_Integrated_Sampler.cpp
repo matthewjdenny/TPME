@@ -40,6 +40,13 @@ List Cluster_Integrated_Sampler(
     //still need to implement check for zero tokens in document
     //Function log_multinomial_draw("log_multinomial_draw");
     
+    Function report("Report_Probs");
+    
+    int list_length = (10 + number_of_outer_itterations*number_of_Gibbs_itterations + 3*number_of_MH_itterations);
+    List to_return(list_length);
+    int Gibbs_Counter = 1;
+    int MH_Counter = 1;
+    
     //set seed and designate RNG
     srand((unsigned)time(NULL));
     std::default_random_engine generator;
@@ -63,13 +70,14 @@ List Cluster_Integrated_Sampler(
     //outer loop over the number of itterations (default 1000)
     for(int n = 0; n < number_of_outer_itterations; ++n){
         
-        
+        report(topic_cluster_assignments);
     
         // ===================================================== //
         // ===================== LDA Step ====================== //
         // ===================================================== //
     
         for(int i = 0; i < number_of_Gibbs_itterations; ++i){
+            
             
             //initialize variables that will be used across iterations
             double beta_val = 0;
@@ -337,6 +345,9 @@ List Cluster_Integrated_Sampler(
                 NumericVector topic_cluster_distribution(number_of_clusters);
                 
                 for(int k = 0; k < number_of_clusters; ++k){
+                    
+                    NumericVector current_author_position(number_of_latent_dimensions);
+                    NumericVector recipient_position(number_of_latent_dimensions);
                 
                     //get current cluster intercept
                     double current_cluster_intercept = current_intercepts[k];
@@ -371,7 +382,7 @@ List Cluster_Integrated_Sampler(
                                     distance += pow((current_author_position[j] - recipient_position[j]),2);
                                 }
                                 
-                                beta_val = 0;
+                                double beta_val = 0;
                                 for(int c = 0; c < number_of_betas; ++c){
                                     beta_val += current_cluster_betas[c]*beta_indicator_array(a,b,c);
                                 }
@@ -401,17 +412,23 @@ List Cluster_Integrated_Sampler(
                     }
                     //assign this probability to the cluster probability vector
                     topic_cluster_distribution[k] = sum_log_probability_of_current_positions;
+                    
                 } // end loop over clusters
-                
+                report(topic_cluster_distribution);
                 NumericVector cluster_probabilities(number_of_clusters);
                 for(int x = 0; x < number_of_clusters; ++x){
                     cluster_probabilities[x] = exp(topic_cluster_distribution[x]);
                 }
+                
                 std::discrete_distribution<int> distribution_clusters (cluster_probabilities.begin(),cluster_probabilities.end());
                 int cluster_assignment = distribution_clusters(generator) + 1;
+                //report(cluster_probabilities);
                 //set the new cluster assignment for the topic 
                 topic_cluster_assignments[t] = double(cluster_assignment);
             }//end loop over topics
+            
+            to_return[10+Gibbs_Counter] = topic_cluster_assignments;
+            Gibbs_Counter += 1;
         }//end of big number of itterations loop for entire step. 
         
         //return something
@@ -429,8 +446,6 @@ List Cluster_Integrated_Sampler(
             NumericVector current_author_position(number_of_latent_dimensions);
             NumericVector proposed_author_position(number_of_latent_dimensions);
             NumericVector recipient_position(number_of_latent_dimensions);
-            double sum_log_probability_of_current_positions = 0;
-            double sum_log_probability_of_proposed_positions = 0;
             NumericVector proposed_intercepts(number_of_clusters);
             IntegerVector arrayDims4 = plp.attr("dim");
             arma::cube proposed_latent_positions(plp.begin(), arrayDims4[0], arrayDims4[1], arrayDims4[2], false);
@@ -458,6 +473,8 @@ List Cluster_Integrated_Sampler(
             
             //main loop
             for(int k = 0; k < number_of_clusters; ++k){
+                double sum_log_probability_of_current_positions = 0;
+                double sum_log_probability_of_proposed_positions = 0;
                 //get current topic intercept
                 double current_cluster_intercept = current_intercepts[k];
                 double proposed_cluster_intercept = proposed_intercepts[k];
@@ -600,22 +617,29 @@ List Cluster_Integrated_Sampler(
                 }
             }//end of loop over clusters for which we are doing separate proposals and acceptances
             
+            //if we are in the last outter iteration save everything
+            if(n == (number_of_outer_itterations -1)){
+                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + MH_Counter] = current_intercepts;
+                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + number_of_MH_itterations + MH_Counter] = current_latent_positions;
+                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + 2*number_of_MH_itterations + MH_Counter] = betas;
+                MH_Counter += 1;
+            }
+            
         }// end of MH loop
 
     }// end of main outer itteration loop 
     
-    //int list_length = (7*number_of_metropolis_itterations);
-    List to_return(10);
+    
     to_return[0] = token_topic_assignment_list;
     to_return[1] = topic_present_edge_counts;
     to_return[2] = topic_absent_edge_counts;
     to_return[3] = token_type_topic_counts;
     to_return[4] = edge_topic_assignments;
     to_return[5] = number_of_documents;
-    to_return[6] = current_latent_positions; 
-    to_return[7] = current_intercepts;
-    to_return[8] = betas;
-    to_return[9] = topic_cluster_assignments;
+    to_return[6] = number_of_outer_itterations;
+    to_return[7] = number_of_Gibbs_itterations;
+    to_return[8] = number_of_MH_itterations;
+    to_return[9] = number_of_clusters;
     return to_return;
 }
 
