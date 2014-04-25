@@ -4,7 +4,7 @@
 # user defined functions are in all caps
 
 
-Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10 ){
+Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -56,9 +56,15 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
         Latent_Space_Positions[,,a] <- matrix(0,nrow = Latent_Dimensions, ncol = Number_of_Clusters)
         for(s in 1:Latent_Dimensions){
             Latent_Space_Positions[s,,a] <- runif(Number_of_Clusters, min = -1, max = 1) #samples from a continuous uniform distribution on (-1,1)
-        }
-        
+        }  
     }
+    
+    #now make them all the same
+    for(c in 1:Number_of_Clusters){
+        Latent_Space_Positions[,c,] <- Latent_Space_Positions[,1,]
+    }
+    
+
     
     #store information about current edge log likelihoods. This is a number of topics to number of authors to number of recipients list of lists containing a list of edge information including author latent coordinates, recipient coordinates, intercept, edge value (whether it was set to 1 or 0 (also known as y)),edge log likelihood anmd number of latent dimensions for convenience. 
     test <-   list(rep(0,Latent_Dimensions),rep(0,Latent_Dimensions),10,0,0,Latent_Dimensions)       
@@ -173,7 +179,8 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
             as.matrix(Edge_Topic_Assignments),
             Word_Type_Topic_Counts,
             apply(Word_Type_Topic_Counts,2,sum),
-            Number_Of_Words
+            Number_Of_Words,
+            Itterations_Before_Cluster_Assingment_Updates
         )
 
         #get things ready to return a model object with all of the relevant info 
