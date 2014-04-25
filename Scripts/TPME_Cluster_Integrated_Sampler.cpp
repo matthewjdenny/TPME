@@ -33,7 +33,8 @@ List Cluster_Integrated_Sampler(
     NumericMatrix edge_topic_assignments,
     NumericMatrix token_type_topic_counts,
     NumericVector topic_token_sums,
-    int number_of_word_types
+    int number_of_word_types,
+    int itterations_before_cluster_assingment_update
     ){
         
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
@@ -41,6 +42,10 @@ List Cluster_Integrated_Sampler(
     //Function log_multinomial_draw("log_multinomial_draw");
     
     Function report("Report_Probs");
+    Function report2("Report_2");
+    
+    //start subtracting from topic edge absent and present counts after initialization
+    int initialization_complete = 0;
     
     int list_length = (10 + number_of_outer_itterations*number_of_Gibbs_itterations + 3*number_of_MH_itterations);
     List to_return(list_length);
@@ -322,20 +327,27 @@ List Cluster_Integrated_Sampler(
                         }
                         std::discrete_distribution<int> distribution2 (edge_probabilities.begin(),edge_probabilities.end());
                         int sampled_token = distribution2(generator);
-                        //sampled_token = as<int>(log_multinomial_draw(edge_log_probabilities));
+                        double previous_assignment = edge_topic_assignments(d,a);
                         edge_topic_assignments(d,a) = token_topic_assignments2[sampled_token];
                         
                         // do some updating
                         if(actual_edge == 1){
+                            if(initialization_complete == 1){
+                               topic_present_edge_counts(document_author,a,(previous_assignment -1)) -=1; 
+                            }
                             topic_present_edge_counts(document_author,a,(token_topic_assignments2[sampled_token] -1)) +=1;
                         }
                         else{
+                            if(initialization_complete == 1){
+                                topic_absent_edge_counts(document_author,a,(previous_assignment -1)) -=1;
+                            }
                             topic_absent_edge_counts(document_author,a,(token_topic_assignments2[sampled_token] -1)) +=1;
                         } 
                     }//end recipeints loop
                 }//end of loop over edges for for current document
             }// end of loop over docuemnts for edge-topic assignemnt step
             
+            initialization_complete = 1;
             
             // ===================== Hard Cluster Topics ====================== //
             
@@ -414,20 +426,33 @@ List Cluster_Integrated_Sampler(
                     topic_cluster_distribution[k] = sum_log_probability_of_current_positions;
                     
                 } // end loop over clusters
-                report(topic_cluster_distribution);
+                //report(topic_cluster_distribution);
                 NumericVector cluster_probabilities(number_of_clusters);
                 for(int x = 0; x < number_of_clusters; ++x){
                     cluster_probabilities[x] = exp(topic_cluster_distribution[x]);
+                }
+                //find smallest non-zero value
+                double smallest = 1;
+                for(int x = 0; x < number_of_clusters; ++x){
+                    if(cluster_probabilities[x] > 0 & cluster_probabilities[x] < smallest){
+                        smallest = cluster_probabilities[x];
+                    }
+                }
+                //add to all other values
+                for(int x = 0; x < number_of_clusters; ++x){
+                    cluster_probabilities[x] += smallest/1000;
                 }
                 
                 std::discrete_distribution<int> distribution_clusters (cluster_probabilities.begin(),cluster_probabilities.end());
                 int cluster_assignment = distribution_clusters(generator) + 1;
                 //report(cluster_probabilities);
-                //set the new cluster assignment for the topic 
-                topic_cluster_assignments[t] = double(cluster_assignment);
+                //set the new cluster assignment for the topic if we have gone through more than 20 iterations of the algorithm
+                if(n > itterations_before_cluster_assingment_update){
+                    topic_cluster_assignments[t] = double(cluster_assignment);
+                }
             }//end loop over topics
             
-            to_return[10+Gibbs_Counter] = topic_cluster_assignments;
+            to_return[9+Gibbs_Counter] = topic_cluster_assignments;
             Gibbs_Counter += 1;
         }//end of big number of itterations loop for entire step. 
         
@@ -473,8 +498,8 @@ List Cluster_Integrated_Sampler(
             
             //main loop
             for(int k = 0; k < number_of_clusters; ++k){
-                double sum_log_probability_of_current_positions = 0;
-                double sum_log_probability_of_proposed_positions = 0;
+                double lsm_sum_log_probability_of_current_positions = 0;
+                double lsm_sum_log_probability_of_proposed_positions = 0;
                 //get current topic intercept
                 double current_cluster_intercept = current_intercepts[k];
                 double proposed_cluster_intercept = proposed_intercepts[k];
@@ -540,8 +565,8 @@ List Cluster_Integrated_Sampler(
                             }
                             
                             //multiply and add to sum
-                            sum_log_probability_of_current_positions += num_actual_edge*log_prob_edge;
-                            sum_log_probability_of_current_positions += num_non_edge*log_prob_no_edge;
+                            lsm_sum_log_probability_of_current_positions += num_actual_edge*log_prob_edge;
+                            lsm_sum_log_probability_of_current_positions += num_non_edge*log_prob_no_edge;
                             
                             
                             // ======== Now calculate for new positions ==========//
@@ -577,8 +602,8 @@ List Cluster_Integrated_Sampler(
                             }
                             
                             //multiply and add to sum
-                            sum_log_probability_of_proposed_positions += num_actual_edge*log_prob_edge;
-                            sum_log_probability_of_proposed_positions += num_non_edge*log_prob_no_edge;
+                            lsm_sum_log_probability_of_proposed_positions += num_actual_edge*log_prob_edge;
+                            lsm_sum_log_probability_of_proposed_positions += num_non_edge*log_prob_no_edge;
                         }
                         
                         
@@ -588,40 +613,52 @@ List Cluster_Integrated_Sampler(
                 
                 
                 //now calculate log ratio between two
-                double log_ratio = sum_log_probability_of_proposed_positions - sum_log_probability_of_current_positions;
+                double log_ratio = lsm_sum_log_probability_of_proposed_positions - lsm_sum_log_probability_of_current_positions;
                 
                 double rand_num=((double)rand()/(double)RAND_MAX);
                 double lud = log(rand_num);
                 
                 //take the log of a uniform draw on 0 to  1
                 //double lud = as<double>(log_uniform_draw());
+                //report(current_intercepts);
                 
                 if(log_ratio < lud){
                     //if the log ratio is smaller then reject the new positions
                     // DO NOTHING
+                    //report("Not Updating");
                 }
                 else{
+                    //report("Updating");
                     //if we accept UPDATE
                     //for intercepts
-                    current_intercepts[k] = proposed_intercepts[k];
+                    double tempint = proposed_intercepts[k];
+                    current_intercepts[k] = tempint;
                     //for latent positions
                     for(int a = 0; a < number_of_actors; ++a){
                         for(int l = 0; l < number_of_latent_dimensions; ++l){
-                            current_latent_positions(l,k,a) = proposed_latent_positions(l,k,a);
+                            double templat = proposed_latent_positions(l,k,a);
+                            current_latent_positions(l,k,a) = templat;
                         }
                     }
                     //for betas
                     for(int b = 0; b < number_of_betas; ++b){
-                        betas(k,b) = proposed_betas(k,b) ;
+                        double tempbet = proposed_betas(k,b);
+                        betas(k,b) = tempbet;
                     }
                 }
+                //report(current_intercepts);
             }//end of loop over clusters for which we are doing separate proposals and acceptances
             
             //if we are in the last outter iteration save everything
             if(n == (number_of_outer_itterations -1)){
-                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + MH_Counter] = current_intercepts;
-                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + number_of_MH_itterations + MH_Counter] = current_latent_positions;
-                to_return[10 + number_of_outer_itterations*number_of_Gibbs_itterations + 2*number_of_MH_itterations + MH_Counter] = betas;
+                //report("storing");
+                NumericVector ints = current_intercepts;
+                //report(ints);
+                NumericMatrix bets = betas;
+                arma::cube lat_pos = current_latent_positions;
+                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + MH_Counter] = ints;
+                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + number_of_MH_itterations + MH_Counter] = lat_pos;
+                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + 2*number_of_MH_itterations + MH_Counter] = bets;
                 MH_Counter += 1;
             }
             
