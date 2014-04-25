@@ -1,5 +1,5 @@
 
-Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1, vocab = vocabulary,county_name = "McDowell_County",skip_first = 1000, Cluster_Integrated = T){
+Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1, vocab = vocabulary,county_name = "McDowell_County",skip_first = 0, Cluster_Integrated = T){
     #load current results
     #load("Current_Itteration_Results.Rdata")
     #for testing load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
@@ -30,6 +30,8 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         to_return[2] = topic_absent_edge_counts;
         to_return[3] = token_type_topic_counts;
         to_return[4] = edge_topic_assignments;
+        
+        
         to_return[5] = number_of_documents;
         to_return[6] = number_of_outer_itterations;
         to_return[7] = number_of_Gibbs_itterations;
@@ -44,20 +46,15 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         temp <- append(Metropolis_Results[skip_first:Itterations],
                        Metropolis_Results[(Itterations+skip_first):(2*Itterations)])
         temp <- append(temp,Metropolis_Results[(2*Itterations+skip_first):(3*Itterations)])
-        temp <- append(temp,Metropolis_Results[(3*Itterations+skip_first):(4*Itterations)])
-        temp <- append(temp,Metropolis_Results[(4*Itterations+skip_first):(5*Itterations)])
-        temp <- append(temp,Metropolis_Results[(5*Itterations+skip_first):(6*Itterations)])
-        temp <- append(temp,Metropolis_Results[(6*Itterations+skip_first):(7*Itterations)])
         Metropolis_Results <- temp
         
         #thin out the data by taking every Thin_Itterations itteration for the metropolis step
         Metropolis_Results <- Metropolis_Results[seq(1, length(Metropolis_Results),Thin_Itterations)]
         
         #get model information and extract data
-        Itterations <- length(Metropolis_Results)/7
-        Latent_Spaces <- length(Metropolis_Results[[1]][,1,1])
-        Topics <- length(Metropolis_Results[[1]][1,,1])
-        Actors <- length(Metropolis_Results[[1]][1,1,])
+        Latent_Spaces <- length(Metropolis_Results[[(Itterations + 1)]][,1,1])
+        Topics <- length(Metropolis_Results[[1]])
+        Actors <- length(Metropolis_Results[[(Itterations + 1)]][1,1,])
         Token_Topic_Assignments <- Topic_Model_Results[[1]]
         Topic_Present_Edge_Counts <- Topic_Model_Results[[2]]
         Topic_Absent_Edge_Counts <- Topic_Model_Results[[3]]
