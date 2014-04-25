@@ -13,25 +13,34 @@ setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
 
 # 2. Load user defined functions
 source("./Scripts/TPME_Run_Analysis.R")
+source("./Scripts/TPME_Run_Cluster_Integrated_Analysis.R")
 source("./Scripts/TPME_Model_Diagnostics.R")
 source("./Scripts/TPME_Take_Sample.R")
 source("./Scripts/TPME_Calculate_Network_Efficiency_Statistics.R")
 
 Report_Probs <- function(current){
-    print(paste("Current Save Iteration:",current) )
+    print(current)
+    #print(paste("Current Save Iteration:",current) )
+}
+
+Report_2 <- function(current){
+    print(sum(as.vector(apply(current,2,sum))))
+    #print(paste("Current Save Iteration:",current) )
 }
 
 
 # 3. Load data: vocab file, document word matrix, document edge matrix and actor covariates
 
 # choose a dataset to work with:
-#load("./Data/McDowell_2011_Data.Rdata")
+load("./Data/McDowell_2011_Data.Rdata")
 #load("./Data/New_Hannover_2011_Data.Rdata")
 #load("./Data/Transylvania_2011_Data.Rdata")
 #load("./Data/Columbus_2011_Data.Rdata")
 
 # 4. Run analysis for 50,000 itterations by setting equal to 50
 #Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Columbus_2011_3-13-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
+
+Result <- Run_Cluster_Integrated_Analysis(Number_Of_Iterations = 100, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Topic_Step_Itterations = 1, Sample_Step_Itterations = 100, output_file = "Columbus_2011_4-18-14",Proposal_Variance = 0.5, system_OS = "Mac", Number_of_Clusters = 10 )
 
 #Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_2011_3-13-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05,Metropolis_Step_Itterations = 1000, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
 
@@ -64,7 +73,7 @@ Report_Probs <- function(current){
 #Generate_Model_Diagnsotics(input_file = "Transylvania_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Transylvania_50M_3-13-14", Thin_Itterations = 1,skip_first = 40200)
 
 
-#Generate_Model_Diagnsotics(input_file = "McDowell_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_50M_3-13-14", Thin_Itterations = 1,skip_first = 7000)
+Generate_Model_Diagnsotics(input_file = "McDowell_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_50M_3-13-14", Thin_Itterations = 1,skip_first = 7000)
 
 #Generate_Model_Diagnsotics(input_file = "McDowell_Slice_2M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_2M_slice_3-13-14", Thin_Itterations = 1,skip_first = 6200)
 
