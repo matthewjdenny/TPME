@@ -17,26 +17,28 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         print("Extracting Reduced Data")
         #extract current metropolis results
         #Return_List = Result
+        #vocab = vocabulary
+        #Thin_Itterations = 1
+        #skip_first=1
         Topic_Model_Results <- Return_List[1:5]
         Model_Parameters <- Return_List[6:10]
-        Cluster_Topic_Assignments <- Return_List[11:20]
-        Metropolis_Results <- Return_List[21:length(Return_List)]
+        Cluster_Topic_Assignments <- Return_List[11:(10+Model_Parameters[[2]])]
+        Metropolis_Results <- Return_List[(11+Model_Parameters[[2]]):length(Return_List)]
+        #str(Cluster_Topic_Assignments)
         #free up memory
-        rm(Return_List)
+        #rm(Return_List)
         
         
-        to_return[0] = token_topic_assignment_list;
-        to_return[1] = topic_present_edge_counts;
-        to_return[2] = topic_absent_edge_counts;
-        to_return[3] = token_type_topic_counts;
-        to_return[4] = edge_topic_assignments;
-        
-        
-        to_return[5] = number_of_documents;
-        to_return[6] = number_of_outer_itterations;
-        to_return[7] = number_of_Gibbs_itterations;
-        to_return[8] = number_of_MH_itterations;
-        to_return[9] = number_of_clusters;
+#         to_return[0] = token_topic_assignment_list;
+#         to_return[1] = topic_present_edge_counts;
+#         to_return[2] = topic_absent_edge_counts;
+#         to_return[3] = token_type_topic_counts;
+#         to_return[4] = edge_topic_assignments;
+#         to_return[5] = number_of_documents;
+#         to_return[6] = number_of_outer_itterations;
+#         to_return[7] = number_of_Gibbs_itterations;
+#         to_return[8] = number_of_MH_itterations;
+#         to_return[9] = number_of_clusters;
         
         
         
@@ -46,6 +48,9 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         temp <- append(Metropolis_Results[skip_first:Itterations],
                        Metropolis_Results[(Itterations+skip_first):(2*Itterations)])
         temp <- append(temp,Metropolis_Results[(2*Itterations+skip_first):(3*Itterations)])
+        temp <- append(temp,Metropolis_Results[(3*Itterations+skip_first):(4*Itterations)])
+        temp <- append(temp,Metropolis_Results[(4*Itterations+skip_first):(5*Itterations)])
+        temp <- append(temp,Metropolis_Results[(5*Itterations+skip_first):(6*Itterations)])
         Metropolis_Results <- temp
         
         #thin out the data by taking every Thin_Itterations itteration for the metropolis step
@@ -53,7 +58,8 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         
         #get model information and extract data
         Latent_Spaces <- length(Metropolis_Results[[(Itterations + 1)]][,1,1])
-        Topics <- length(Metropolis_Results[[1]])
+        Clusters <- length(Metropolis_Results[[1]])
+        Topics <- length(Cluster_Topic_Assignments[[1]])
         Actors <- length(Metropolis_Results[[(Itterations + 1)]][1,1,])
         Token_Topic_Assignments <- Topic_Model_Results[[1]]
         Topic_Present_Edge_Counts <- Topic_Model_Results[[2]]
@@ -107,30 +113,39 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         #display current accept rate
         start <- (3*Itterations) + 1
         end <- 4*Itterations
-        print(paste("Current_Accept_Rate:", sum(unlist(Metropolis_Results[start:end]))/Itterations))
+        Accept_Rates <- Metropolis_Results[start:end]
+        accepted <- matrix(0, ncol = Clusters,nrow = Itterations)
+        for(j in 1:Itterations){
+            accepted[j,] <- Accept_Rates[[j]]
+        }
+
+        for(i in 1:Clusters){
+            print(paste("Current accept rate for cluster", i, "is:", sum(accepted[,i])/Itterations))
+        }
+        
         
         #======= plotting function definitions =======#
         #function to plot intercept over time
         plot_intercepts <- function(intercept){
             intercepts <- rep(0,Itterations)
             for(i in 1:Itterations){
-                intercepts[i] <- Metropolis_Results[[Itterations+i]][intercept]
+                intercepts[i] <- Metropolis_Results[[i]][intercept]
             }
             plot(intercepts, main = paste("Topic:",intercept,"Geweke:",round(geweke.diag(intercepts)$z,2)),ylab= "Value",pch = 20)
         }
         #function to plot betas over time
-        plot_betas <- function(topic){
+        plot_betas <- function(Cluster){
             betas <- matrix(0,ncol = 4, nrow = Itterations)
             for(i in 1:Itterations){
-                betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
+                betas[i,] <- Metropolis_Results[[2*Itterations+i]][Cluster,]
             }
-            matplot(betas, main = paste("Topic:",topic,"Geweke","\n MM:",round(geweke.diag(betas[,1])$z,2) , "MF:",round(geweke.diag(betas[,2])$z,2) ,"\n FM:",round(geweke.diag(betas[,3])$z,2) ,"FF:",round(geweke.diag(betas[,4])$z,2)),ylab= "Value",pch = 20)
+            matplot(betas, main = paste("Cluster:",Cluster,"Geweke","\n MM:",round(geweke.diag(betas[,1])$z,2) , "MF:",round(geweke.diag(betas[,2])$z,2) ,"\n FM:",round(geweke.diag(betas[,3])$z,2) ,"FF:",round(geweke.diag(betas[,4])$z,2)),ylab= "Value",pch = 20)
         }
         #function to plot latent spaces for a given actor
         plot_LS_Positions <- function(topic){
             LSP <- matrix(0,nrow=Itterations, ncol= Latent_Spaces)
             for(i in 1:Itterations){
-                LSP[i,] <- Metropolis_Results[[i]][,topic,LS_Actor]
+                LSP[i,] <- Metropolis_Results[[Itterations+i]][,topic,LS_Actor]
             }
             corel <- cor(LSP[,1], LSP[,2])
             matplot(LSP, main = paste("Topic:",topic, "\n LS Correlations:", round(corel,3),"\n Geweke - LS1:",round(geweke.diag(LSP[,1])$z,2),"LS2:",round(geweke.diag(LSP[,2])$z,2)),ylab= "Value",pch = 20)
@@ -169,35 +184,34 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         
         #function to plot log likelihoods over time
-        plot_likelihoods <- function(Itterations){
+        plot_likelihoods <- function(Cluster){
             likelihoods <- matrix(0,ncol = 2, nrow = Itterations)
             for(i in 1:Itterations){
-                likelihoods[i,1] <- Metropolis_Results[[4*Itterations+i]]
-                likelihoods[i,2] <- Metropolis_Results[[5*Itterations+i]]
+                likelihoods[i,1] <- Metropolis_Results[[4*Itterations+i]][Cluster]
+                likelihoods[i,2] <- Metropolis_Results[[5*Itterations+i]][Cluster]
             }
-            matplot(likelihoods, main = paste("Log Likelihoods of Current and Proposed Positions over Time \n Geweke Statistic:", round(geweke.diag(likelihoods[,1])$z,2)),ylab= "Value",pch = 20)
+            matplot(likelihoods, main = paste("Log Likelihoods of Current and Proposed Positions over Time For Cluster", Cluster, "\n Geweke Statistic:", round(geweke.diag(likelihoods[,1])$z,2)),ylab= "Value",pch = 20)
         }
         
         #function to plot log ratios vs log uniform draws over time
-        plot_ratio_lud <- function(Itterations){
+        plot_ratio_lud <- function(Cluster){
             #likelihoods <- matrix(0,ncol = 2, nrow = Itterations)
             accept <- rep(0,Itterations)
             likelihoods <- rep(0,Itterations)
             lud <- rep(0,Itterations)
             colors <- rep("",Itterations)
             for(i in 1:Itterations){
-                likelihoods[i] <- Metropolis_Results[[4*Itterations+i]] - Metropolis_Results[[5*Itterations+i]] #- Metropolis_Results[[6*Itterations+i]]
-                accept[i] <- Metropolis_Results[[3*Itterations+i]]
-                lud[i] <- Metropolis_Results[[6*Itterations+i]]
-                if(Metropolis_Results[[3*Itterations+i]] == 1){
+                likelihoods[i] <- Metropolis_Results[[4*Itterations+i]][Cluster] - Metropolis_Results[[5*Itterations+i]][Cluster] #- Metropolis_Results[[6*Itterations+i]]
+                accept[i] <- accepted[i,Cluster]
+                if(accept[i] == 1){
                     col <- "blue"
                 }else{
                     col <- "red"
                 }
                 colors[i] <- col
                 
-                accepted <- accept*likelihoods
-                accepted <- accepted[which(accept == 1)]
+                accepted2 <- accept*likelihoods
+                accepted2 <- accepted2[which(accept == 1)]
                 
             }
             #fit <- lm(accepted~1:10000)
@@ -211,10 +225,10 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         
         #function to plot mean beta values over time
-        plot_beta_estimates <- function(topic){
+        plot_beta_estimates <- function(Cluster){
             betas <- matrix(0,ncol = 4, nrow = Itterations)
             for(i in 1:Itterations){
-                betas[i,] <- Metropolis_Results[[2*Itterations+i]][topic,]
+                betas[i,] <- Metropolis_Results[[2*Itterations+i]][Cluster,]
             }
             mean_se <- as.data.frame(matrix(0,nrow=4, ncol = 2))
             mean_se <- cbind(c("M-M", "M-F","F-M", "F-F"),mean_se)
@@ -223,15 +237,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
                 mean_se[j,2] <- mean(betas[,j])
                 mean_se[j,3] <- sd(betas[,j]) 
             }
-            plot <- ggplot(mean_se, aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue"), width=.1, size = 1.3)+geom_point(fill= c("black","red", "green", "blue"),colour="black",pch=c(21,22,23,24), size = 4)+ labs(title = paste("Topic:",topic))
+            plot <- ggplot(mean_se, aes(x=Tie, y=Parameter_Estimate))+geom_errorbar(aes(ymin=Parameter_Estimate-SE, ymax=Parameter_Estimate+SE),col = c("black","red", "green", "blue"), width=.1, size = 1.3)+geom_point(fill= c("black","red", "green", "blue"),colour="black",pch=c(21,22,23,24), size = 4)+ labs(title = paste("Cluster:",Cluster))
             return(list(plot))
         }
         # ================================================ #
         
-        pdf(paste(out_directory,county_name,"_Likelihoods.pdf", sep = ""),height=8,width=12,pointsize=7)
-        par(mfrow= c(1,1))
-        plot_likelihoods(Itterations) 
-        dev.off()
+        
         
         # ======= Generate Plots and save as PDFs =========#      
         make_plots <- function(Width, Height, parrow,parcol){
@@ -239,48 +250,52 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             print("Plotting Intercepts...")
             pdf(file=paste(out_directory,county_name,"_Intercepts.pdf",sep = ""), width = Width, height = Height)
             par(mfrow= c(parrow,parcol))
-            sapply(1:Topics,plot_intercepts)
+            sapply(1:Clusters,plot_intercepts)
             dev.off()
             
             #generate pdf of intercepts 
             print("Plotting Betas...")
             pdf(file=paste(out_directory,county_name,"_Betas.pdf",sep = ""), width = Width, height = Height)
             par(mfrow= c(parrow,parcol))
-            sapply(1:Topics,plot_betas)
+            sapply(1:Clusters,plot_betas)
             dev.off()
             
             #generate pdf of intercepts 
             print("Plotting Latent Space Positions...")
             pdf(file=paste(out_directory,county_name,"_LS_Positions.pdf",sep = ""), width = Width, height = Height)
             par(mfrow= c(parrow,parcol))
-            sapply(1:Topics,plot_LS_Positions)
+            sapply(1:Clusters,plot_LS_Positions)
             dev.off()
             
-            #generate network plots
-            print("Plotting Networks...")
-            pdf(file=paste(out_directory,county_name,"_Network_Plots.pdf",sep = ""), width = Width, height = Height)
+#             #generate network plots
+#             print("Plotting Networks...")
+#             pdf(file=paste(out_directory,county_name,"_Network_Plots.pdf",sep = ""), width = Width, height = Height)
+#             par(mfrow= c(parrow,parcol))
+#             sapply(1:Clusters,plot_Topic_Network)
+#             dev.off()
+            
+            pdf(paste(out_directory,county_name,"_Likelihoods.pdf", sep = ""),height=Height,width=Width,pointsize=7)
             par(mfrow= c(parrow,parcol))
-            sapply(1:Topics,plot_Topic_Network)
+            sapply(1:Clusters,plot_likelihoods) 
             dev.off()
             
-            
-            #generate network plots one per page
-            print("Plotting Networks...")
-            pdf(file=paste(out_directory,county_name,"_Network_Plots_Full_Page.pdf",sep = ""), width = Width, height = Height)
-            par(mfrow= c(1,1))
-            sapply(1:Topics,plot_Topic_Network_Full)
-            dev.off()
+#             #generate network plots one per page
+#             print("Plotting Networks...")
+#             pdf(file=paste(out_directory,county_name,"_Network_Plots_Full_Page.pdf",sep = ""), width = Width, height = Height)
+#             par(mfrow= c(1,1))
+#             sapply(1:Clusters,plot_Topic_Network_Full)
+#             dev.off()
             
             
             #generate network plots
             print("Plotting Beta Estimates...")
             pdf(file=paste(out_directory,county_name,"_Beta_Estimates.pdf",sep = ""), width = Width, height = Height)
             par(mfrow= c(parrow,parcol))
-            plots <- sapply(1:Topics,plot_beta_estimates)
+            plots <- sapply(1:Clusters,plot_beta_estimates)
             #for(j in 1:length(plots)){
             #    print(plots[[j]])
             #}
-            multiplot(plotlist = plots, cols = 10)
+            multiplot(plotlist = plots, cols = 5)
             dev.off()
         }
         
@@ -322,14 +337,16 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         
         #now actually generate the plots based on the number of topics     
-        if(Topics <= 25){
-            make_plots(12,12,5,5)
-        }else if(Topics <= 50){
-            make_plots(25,12,5,10)
-        }else if(Topics <= 100){
-            make_plots(25,25,10,10)
+        if(Clusters <= 4){
+            make_plots(12,12,2,2)
+        }else if(Clusters <= 9 ){
+            make_plots(12,12,3,3)
+        }else if(Clusters <= 10){
+            make_plots(15,9,2,5)
+        }else if(Clusters <= 20){
+            make_plots(25,25,4,5)
         }else{
-            make_plots(50,25,10,20)   
+            make_plots(50,25,6,10)   
         }
         
         par(mfrow= c(1,1))
@@ -357,8 +374,8 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         
         
         pdf(paste(out_directory,county_name,"_Log_Ratio_LUD.pdf", sep = ""),height=8,width=12,pointsize=7)
-        par(mfrow= c(2,1))
-        plot_ratio_lud(Itterations) 
+        par(mfrow= c(5,2))
+        sapply(1:Clusters,plot_ratio_lud) 
         dev.off()
         
         print("Outputing Geweke statistics..")
@@ -367,12 +384,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         beta_list <- list()
         LS_list <- list()
         t= 1
-        for(t in 1:Topics){
+        for(t in 1:Clusters){
             print(paste("Current Topic: ", t))
             #Intercepts
             intercepts <- rep(0,Itterations)
             for(i in 1:Itterations){
-                intercepts[i] <- Metropolis_Results[[Itterations+i]][t]
+                intercepts[i] <- Metropolis_Results[[i]][t]
             }
             int <- as.numeric(geweke.diag(intercepts)$z)
             intercept_list <- append(intercept_list,int)
@@ -393,7 +410,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             for(a in 1:Actors){
                 LSP <- matrix(0,nrow=Itterations, ncol= Latent_Spaces)
                 for(i in 1:Itterations){
-                    LSP[i,] <- Metropolis_Results[[i]][,t,a]
+                    LSP[i,] <- Metropolis_Results[[Itterations+i]][,t,a]
                 }
                 #calcaulte statistic
                 for(j in 1:Latent_Spaces){
@@ -435,9 +452,9 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             return(mean_se[,2:3])
         }
         
-        beta_averages <- matrix(0, ncol = 4,nrow = Topics)
-        beta_se <- matrix(0, ncol = 4,nrow = Topics)
-        for(i in 1:Topics){
+        beta_averages <- matrix(0, ncol = 4,nrow = Clusters)
+        beta_se <- matrix(0, ncol = 4,nrow = Clusters)
+        for(i in 1:Clusters){
             result <- get_beta_estimates(i)
             beta_averages[i,] <- result[,1]
             beta_se[i,] <- result[,2]
@@ -445,30 +462,30 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         }
         
         
-        topic_intercepts <- matrix(0,ncol = 2,nrow= Topics)
-        for(t in 1:Topics){
+        Clusters_intercepts <- matrix(0,ncol = 2,nrow= Topics)
+        for(t in 1:Clusters){
             intercepts <- rep(0,Itterations)
             for(i in 1:Itterations){
-                intercepts[i] <- Metropolis_Results[[Itterations+i]][t]
+                intercepts[i] <- Metropolis_Results[[i]][t]
             }
-            topic_intercepts[t,1] <- mean(intercepts)
-            topic_intercepts[t,2] <- sd(intercepts)
+            Clusters_intercepts[t,1] <- mean(intercepts)
+            Clusters_intercepts[t,2] <- sd(intercepts)
         }
         
-        topic_average_distances <- rep(0,Topics)
-        for(t in 1:Topics){
+        topic_average_distances <- rep(0,Clusters)
+        for(t in 1:Clusters){
             print(paste("Calculating topic latent space average distance:",t))
             #slice <- Topic_Present_Edge_Counts[,,t]
             coordinates <- matrix(0,ncol = Latent_Spaces,nrow = Actors)
             for(i in 1:Actors){
                 tem<- rep(0 ,Itterations)
                 for(k in 1:Itterations){
-                    tem[k] <- Metropolis_Results[[k]][1,t,i]
+                    tem[k] <- Metropolis_Results[[Itterations+ k]][1,t,i]
                 }
                 coordinates[i,1] <- mean(tem)
                 tem2<- rep(0 ,Itterations)
                 for(k in 1:Itterations){
-                    tem2[k] <- Metropolis_Results[[k]][2,t,i]
+                    tem2[k] <- Metropolis_Results[[Itterations +k]][2,t,i]
                 }
                 coordinates[i,2] <- mean(tem2)
             }
@@ -497,7 +514,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         for(i in 1:Topics){
             probs[i,] <- Word_Type_Topic_Counts[,i]/Topic_Token_Totals[i] 
         }
-        topic_data <- cbind(topic_intercepts,topic_average_distances,beta_averages,beta_se,transpose,probs)
+        topic_data <- cbind(Clusters_intercepts,topic_average_distances,beta_averages,beta_se,transpose,probs)
         topic_data <- as.data.frame(topic_data)
         
         prob_vocab <- as.vector(vocab[,1])
