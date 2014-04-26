@@ -14,7 +14,7 @@ List Cluster_Integrated_Sampler(
     int number_of_clusters,
     int number_of_latent_dimensions,
     int number_of_documents,
-    double proposal_variance,
+    NumericVector proposal_variance,
     NumericVector topic_cluster_assignments,
     NumericVector tpec,
     NumericVector taec,
@@ -34,7 +34,8 @@ List Cluster_Integrated_Sampler(
     NumericMatrix token_type_topic_counts,
     NumericVector topic_token_sums,
     int number_of_word_types,
-    int itterations_before_cluster_assingment_update
+    int itterations_before_cluster_assingment_update,
+    double metropolis_target_accpet_rate
     ){
         
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
@@ -44,16 +45,29 @@ List Cluster_Integrated_Sampler(
     Function report("Report_Probs");
     Function report2("Report_2");
     
+    
+    
     //start subtracting from topic edge absent and present counts after initialization
     int initialization_complete = 0;
     
-    int list_length = (10 + number_of_outer_itterations*number_of_Gibbs_itterations + 6*number_of_MH_itterations);
+    //one less than the number of unique objects I want to store at the beginning of the list
+    int list_offset = 11;
+    int list_length = (1 + list_offset + number_of_outer_itterations + number_of_outer_itterations*number_of_Gibbs_itterations + 6*number_of_MH_itterations);
     List to_return(list_length);
     int Gibbs_Counter = 1;
     int MH_Counter = 1;
     NumericVector cluster_accept(number_of_clusters);
     NumericVector Proposed_MH_Likelihoods(number_of_clusters);
     NumericVector Current_MH_Likelihoods(number_of_clusters);
+    
+    //store previous round accept rates
+    NumericMatrix MH_acceptances(number_of_MH_itterations, number_of_clusters);
+    
+    //store proposal variances 
+    NumericMatrix cur_proposal_variances(number_of_outer_itterations,number_of_clusters);
+    
+    //store accept rates across outer itterations
+    NumericMatrix cur_accept_rates(number_of_outer_itterations,number_of_clusters);
     
     //set seed and designate RNG
     srand((unsigned)time(NULL));
@@ -462,7 +476,7 @@ List Cluster_Integrated_Sampler(
             cur_topic_cluster_assignments[b] = topic_cluster_assignments[b];
         }
         //store the current topic-cluster assignment vector to return. 
-        to_return[9+Gibbs_Counter] = cur_topic_cluster_assignments;
+        to_return[list_offset+Gibbs_Counter] = cur_topic_cluster_assignments;
         Gibbs_Counter += 1;
         //return something
         
@@ -480,8 +494,38 @@ List Cluster_Integrated_Sampler(
         // ===================================================================== //
         // ===================== Adaptive Metropolis Step ====================== //
         // ===================================================================== //
-        
-        
+        if(n > 0){
+            for(int k = 0; k < number_of_clusters; ++k){
+                double num_accepted = 0;
+                double iters = (double)number_of_MH_itterations;
+                for(int i = 0; i < number_of_MH_itterations; ++i){
+                    num_accepted += MH_acceptances(i,k); 
+                }
+                double accept_proportion = num_accepted/iters;
+                //update record of accept rates
+                //report(accept_proportion);
+                double cur_iter = (double)n;
+                cur_accept_rates(n,k) = accept_proportion;
+                double temp = proposal_variance[k];
+                //ifthe accept proportion is zero then we should not do anything
+                if(accept_proportion != 0){
+                    if(accept_proportion > metropolis_target_accpet_rate + 0.05){
+                        proposal_variance[k] =  temp*(1 + (1/(cur_iter+1)));
+                    }
+                    if(accept_proportion < metropolis_target_accpet_rate - 0.05){
+                        proposal_variance[k] = temp*(1 - (1/(cur_iter+1)));
+                    }
+                }
+                
+                //report(proposal_variance[k]);
+            }
+            
+            report(proposal_variance);
+            report(cur_accept_rates.row(n));
+            for(int k = 0; k < number_of_clusters; ++k){
+                cur_proposal_variances(n,k) = proposal_variance[k];
+            }
+        }
         
         
         
@@ -505,18 +549,18 @@ List Cluster_Integrated_Sampler(
             //calculate proposed intercepts,latent positions, betas  double x = Rf_rnorm(mean,st. dev);
             for(int k = 0; k < number_of_clusters; ++k){
                 //for intercepts
-                std::normal_distribution<double> distribution1(current_intercepts[k],proposal_variance);
+                std::normal_distribution<double> distribution1(current_intercepts[k],proposal_variance[k]);
                 proposed_intercepts[k] = distribution1(generator);
                 //for latent positions
                 for(int a = 0; a < number_of_actors; ++a){
                     for(int l = 0; l < number_of_latent_dimensions; ++l){
-                        std::normal_distribution<double> distribution2(current_latent_positions(l,k,a),proposal_variance);
+                        std::normal_distribution<double> distribution2(current_latent_positions(l,k,a),proposal_variance[k]);
                         proposed_latent_positions(l,k,a) = distribution2(generator);
                     }
                 }
                 //for betas
                 for(int b = 0; b < number_of_betas; ++b){
-                    std::normal_distribution<double> distribution3(betas(k,b),proposal_variance);
+                    std::normal_distribution<double> distribution3(betas(k,b),proposal_variance[k]);
                     proposed_betas(k,b) = distribution3(generator);
                 }
             }//end of loop over generating new potenttial LS positions
@@ -646,6 +690,9 @@ List Cluster_Integrated_Sampler(
                 double rand_num=((double)rand()/(double)RAND_MAX);
                 double lud = log(rand_num);
                 
+                if(log_ratio == 0){
+                    log_ratio = -10;
+                }
                 //take the log of a uniform draw on 0 to  1
                 //double lud = as<double>(log_uniform_draw());
                 //report(current_intercepts);
@@ -654,10 +701,14 @@ List Cluster_Integrated_Sampler(
                     //if the log ratio is smaller then reject the new positions
                     // DO NOTHING
                     //report("Not Updating");
+                    //for adaptive metropolis
+                    MH_acceptances(i,k) = 0 ;
                 }
                 else{
                     //report("Updating");
                     //if we accept UPDATE
+                    //for adaptive metropolis
+                    MH_acceptances(i,k) = 1; 
                     //for intercepts
                     cluster_accept[k] = 1;
                     double tempint = proposed_intercepts[k];
@@ -709,12 +760,12 @@ List Cluster_Integrated_Sampler(
                 
                 
                 
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + MH_Counter] = ints;
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + number_of_MH_itterations + MH_Counter] = lat_pos;
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + 2*number_of_MH_itterations + MH_Counter] = bets;
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + 3*number_of_MH_itterations + MH_Counter] = cluster_accepted;
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + 4*number_of_MH_itterations + MH_Counter] = Cur_Proposed_MH_Likelihoods;
-                to_return[9 + number_of_outer_itterations*number_of_Gibbs_itterations + 5*number_of_MH_itterations + MH_Counter] = Cur_Current_MH_Likelihoods;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + MH_Counter] = ints;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + number_of_MH_itterations + MH_Counter] = lat_pos;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + 2*number_of_MH_itterations + MH_Counter] = bets;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + 3*number_of_MH_itterations + MH_Counter] = cluster_accepted;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + 4*number_of_MH_itterations + MH_Counter] = Cur_Proposed_MH_Likelihoods;
+                to_return[list_offset + number_of_outer_itterations*number_of_Gibbs_itterations + 5*number_of_MH_itterations + MH_Counter] = Cur_Current_MH_Likelihoods;
                 MH_Counter += 1;
             }
             
@@ -733,6 +784,8 @@ List Cluster_Integrated_Sampler(
     to_return[7] = number_of_Gibbs_itterations;
     to_return[8] = number_of_MH_itterations;
     to_return[9] = number_of_clusters;
+    to_return[10] = cur_proposal_variances;
+    to_return[11] = cur_accept_rates;
     return to_return;
 }
 
