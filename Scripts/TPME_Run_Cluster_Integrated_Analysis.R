@@ -4,7 +4,7 @@
 # user defined functions are in all caps
 
 
-Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5){
+Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5, Adaptive_Metropolis_Target_Accept_Rate = 0.3){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -23,6 +23,9 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
     
     Latent_Space_Intercepts <- rep(10, Number_of_Clusters) #this is set to 10 becasue it can only get smaller
+    
+    temp <- Proposal_Variance #create vector of proposal variances
+    Proposal_Variance <- rep(temp, Number_of_Clusters)
     
     Number_Of_Documents <- length(Document_Word_Matrix[,1]) # the number of documents is equal to the number of rows 
     
@@ -180,7 +183,8 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
             Word_Type_Topic_Counts,
             apply(Word_Type_Topic_Counts,2,sum),
             Number_Of_Words,
-            Itterations_Before_Cluster_Assingment_Updates
+            Itterations_Before_Cluster_Assingment_Updates,
+            Adaptive_Metropolis_Target_Accept_Rate
         )
 
         #get things ready to return a model object with all of the relevant info 
