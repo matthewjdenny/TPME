@@ -4,7 +4,7 @@
 # user defined functions are in all caps
 
 
-Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5, Adaptive_Metropolis_Target_Accept_Rate = 0.3){
+Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5, Adaptive_Metropolis_Target_Accept_Rate = 0.3, slice_sample_alpha_step_size = 1,TPME_Mode = F){
     
     #================ set working driectory and source all functions ====================#
     require(Rcpp)
@@ -147,10 +147,15 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
     
     
     #Assign topics to clusters
-    Topic_Cluster_Assignments <- rep(0,Number_Of_Topics)
-    for(k in 1:Number_Of_Topics){
-        Topic_Cluster_Assignments[k] <- round(runif(1, min = 1, max = Number_of_Clusters),0)
+    if(TPME_Mode){
+        Topic_Cluster_Assignments <- 1:Number_Of_Topics
+    }else{
+        Topic_Cluster_Assignments <- rep(0,Number_Of_Topics)
+        for(k in 1:Number_Of_Topics){
+            Topic_Cluster_Assignments[k] <- round(runif(1, min = 1, max = Number_of_Clusters),0)
+        }
     }
+    
     
     #==================== MAIN Function ====================#                             
         
@@ -184,7 +189,8 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
             apply(Word_Type_Topic_Counts,2,sum),
             Number_Of_Words,
             Itterations_Before_Cluster_Assingment_Updates,
-            Adaptive_Metropolis_Target_Accept_Rate
+            Adaptive_Metropolis_Target_Accept_Rate,
+            slice_sample_alpha_step_size
         )
 
         #get things ready to return a model object with all of the relevant info 
