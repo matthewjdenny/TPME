@@ -35,7 +35,8 @@ List Cluster_Integrated_Sampler(
     NumericVector topic_token_sums,
     int number_of_word_types,
     int itterations_before_cluster_assingment_update,
-    double metropolis_target_accpet_rate
+    double metropolis_target_accpet_rate,
+    double step_size
     ){
         
     //This function handles all of the token topic assingment sampling as well as the edge topic assignment sampling
@@ -45,13 +46,14 @@ List Cluster_Integrated_Sampler(
     Function report("Report_Probs");
     Function report2("Report_2");
     
-    
+    //control paramter for alpha slice smapling so we only slice sample every 5 rounds
+    int slice_sample_counter = 0;
     
     //start subtracting from topic edge absent and present counts after initialization
     int initialization_complete = 0;
     
     //one less than the number of unique objects I want to store at the beginning of the list
-    int list_offset = 11;
+    int list_offset = 12;
     int list_length = (1 + list_offset + number_of_outer_itterations + number_of_outer_itterations*number_of_Gibbs_itterations + 6*number_of_MH_itterations);
     List to_return(list_length);
     int Gibbs_Counter = 1;
@@ -59,6 +61,7 @@ List Cluster_Integrated_Sampler(
     NumericVector cluster_accept(number_of_clusters);
     NumericVector Proposed_MH_Likelihoods(number_of_clusters);
     NumericVector Current_MH_Likelihoods(number_of_clusters);
+    NumericVector Topic_Model_Likelihoods(number_of_outer_itterations);
     
     //store previous round accept rates
     NumericMatrix MH_acceptances(number_of_MH_itterations, number_of_clusters);
@@ -485,16 +488,353 @@ List Cluster_Integrated_Sampler(
         // ===================================================================== //
         // ===================== Slice Sampling Step =========================== //
         // ===================================================================== //
+        //int tester = 1;
+        //if(tester == 10){ // ======== current testing block ========= //
+        //}// =============== end testing block =============== //
+        
+        //take the log of alpha so we can slice sample
+        NumericVector log_alpha_m(number_of_topics);
+        for(int t = 0; t < number_of_topics; ++t){
+            log_alpha_m[t] = log(alpha_m[t]);
+        }
+        //report(log_alpha_m);
+        
+        // ========================== Current Probability ====================//
+        //initialize variables that will be used across iterations
+        double beta_val = 0;
+        NumericVector current_author_position(number_of_latent_dimensions);
+        NumericVector recipient_position(number_of_latent_dimensions);
+        NumericVector current_topic_betas(number_of_betas);
+        double Current_Alpha_Corpus_Likelihood = 0;
         
         
+        for(int d = 0; d < number_of_documents; ++d){
+            //set all document specific parameters 
+            int document_author = document_authors[d] - 1;
+            NumericVector token_topic_assignments1 = token_topic_assignment_list[d];
+            int number_of_tokens = token_topic_assignments1.length();
+            NumericVector token_word_types = token_word_type_list[d];
+            
+            
+            //loop over tokens
+            for(int w = 0; w < number_of_tokens; ++w){
         
+                int t = token_topic_assignments1[w] -1;
+                int topic = t + 1;
+                
+                //get the current topic's cluster assignment
+                double cluster = topic_cluster_assignments[t] - 1;
+                
+                
+                
+                //get current author latent positions (could be updated to run in a loop)
+                current_author_position[0] = current_latent_positions(0,cluster,document_author);
+                current_author_position[1] = current_latent_positions(1,cluster,document_author);
+                
+                //get current topic betas and intercepts
+                double current_cluster_intercept = current_intercepts[cluster];
+                NumericVector current_cluster_betas = betas.row(cluster);
+                //this calculates the addition to the probability that the token was sampled from the topic by
+                //adding together edge likelihoods associated with that topic in the document
+                double additional_edge_probability = 0;
+                
+                
+                for(int a = 0; a < number_of_actors; ++a){
+                    
+                    //no self loops
+                    
+                    if(document_author != a){
+                        
+                        //get whether or not there was an observed edge
+                        int actual_edge = observed_edges(d,a);
+                        //get the edge's current topic assignment
+                        int edge_assignment = edge_topic_assignments(d,a); 
+                        //int edge_assignment = as<int>(get_edge_topic_assignment(document, actor));
+                        if(edge_assignment == topic){
+                            
+                            //get current recipient position
+                            recipient_position[0] = current_latent_positions(0,cluster,a);
+                            recipient_position[1] = current_latent_positions(1,cluster,a);
+                            
+                            //initialize distance
+                            double distance = 0;
+                            //calculate distance
+                            for(int k = 0; k < number_of_latent_dimensions; ++k){
+                                distance += pow((current_author_position[k] - recipient_position[k]),2);
+                            }
+                    
+                            beta_val = 0;
+                            //pull out the correct beta value 
+                            for(int c = 0; c < number_of_betas; ++c){
+                                beta_val += current_cluster_betas[c]*beta_indicator_array(document_author,a,c);
+                            }
+                            //calculate linear predictor
+                            double eta = current_cluster_intercept - pow(distance,.5) + beta_val;
+                    
+                            double log_prob = 0;
+                            if(eta < 0){
+                                if(actual_edge == 1){
+                                    log_prob = eta -log(1 + exp(eta));
+                                }
+                                else{
+                                    log_prob = 0 -log(1 + exp(eta));
+                                }
+                            }
+                            else{
+                                if(actual_edge == 1){
+                                    log_prob = 0 -log(1 + exp(-eta));
+                                }
+                                else{
+                                    log_prob = 0 -eta -log(1 + exp(-eta));
+                                }
+                            }
+                            additional_edge_probability += log_prob;
+                        }   
+                    } 
+                }
+                
+                
+                //now we calculate the first and second terms in the likelihood of of the token being from the current topic
+                //calculate the number of times a token in the current document has been assigned to the current topic
+                int ntd = 0;
+                for(int b = 0; b < number_of_tokens; ++b){
+                    if(b != w){
+                        if(token_topic_assignments1[b] == topic){
+                            ntd +=1;
+                        }
+                    }
+                }
+                
+                int current_word = token_word_types[w] -1;
+                //get the number of times this word type has been assigned in the current topic
+                int wttac = token_type_topic_counts(current_word,t);
+                //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
+                //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
+                
+                //number of tokens assigned to the topic
+                int ntt = topic_token_sums[t];
+                //subtract one from these counts if the current token was assigned to this topic
+                if(topic == token_topic_assignments1[w]){
+                    ntt -= 1;
+                    wttac -=1;
+                }
+                
+                //helps deal with wierd initializations by no allowing negative counts
+                if(wttac < 0){
+                    wttac = 0;
+                }
+                //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
+                double first_term = ntd + exp(log_alpha_m[t]);
+                double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
+                
+                //combine terms and add to conditional posterior distribution
+                Current_Alpha_Corpus_Likelihood += (log(first_term)  + log(second_term) + additional_edge_probability);
+                
+            }//end of loop over tokens
+            //report(Current_Alpha_Corpus_Likelihood);
+        }//end of document loop
         
+        //we have to add on an alpha at the end because we are doing the log transform
+        Current_Alpha_Corpus_Likelihood += log_alpha_m[1];
+        report(Current_Alpha_Corpus_Likelihood);
         
+        Topic_Model_Likelihoods[n] = Current_Alpha_Corpus_Likelihood;
+        //report(log_alpha_m);
+            
+        slice_sample_counter +=1;
+        if(slice_sample_counter == 5){
+            slice_sample_counter = 0;
+            // ======================== Form New Slice ======================== //
+            
+            //take a log uniform draw and add it to the probability of the current sample to get a floor on probabilites of new slice samples we can accept
+            double rand_num=((double)rand()/(double)RAND_MAX);
+            double lud = log(rand_num);
+            double slice_probability_floor = Current_Alpha_Corpus_Likelihood + lud;
+            
+            NumericVector proposed_alpha_m(number_of_topics);
+            NumericVector left_proposed_alpha_m(number_of_topics);
+            NumericVector right_proposed_alpha_m(number_of_topics);
+            //get the left and right bounds on the slice for intercepts,latent positions, betas  
+            double rand_num1=((double)rand()/(double)RAND_MAX);
+            for(int t = 0; t < number_of_topics; ++t){
+                left_proposed_alpha_m[t] = log_alpha_m[t] - rand_num1*step_size;
+                right_proposed_alpha_m[t] = left_proposed_alpha_m[t] + step_size;
+            }
+
+            
+            //set equal to one when new sample accepted
+            int in_slice = 1;
+            
+            while(in_slice < 1){
+                
+                //get new values for the slice for alpha 
+                double rand_num2=((double)rand()/(double)RAND_MAX);
+                for(int t = 0; t < number_of_topics; ++t){
+                    proposed_alpha_m[t] = left_proposed_alpha_m[t] + rand_num2*(right_proposed_alpha_m[t] - left_proposed_alpha_m[t]);
+                } 
+            
+                double Proposed_Alpha_Corpus_Likelihood = 0;
+        
+                for(int d = 0; d < number_of_documents; ++d){
+                    //set all document specific parameters 
+                    int document_author = document_authors[d] - 1;
+                    NumericVector token_topic_assignments1 = token_topic_assignment_list[d];
+                    int number_of_tokens = token_topic_assignments1.length();
+                    NumericVector token_word_types = token_word_type_list[d];
+                    
+                    
+                    //loop over tokens
+                    for(int w = 0; w < number_of_tokens; ++w){
+                
+                        int t = token_topic_assignments1[w] -1;
+                        int topic = t + 1;
+                        
+                        //get the current topic's cluster assignment
+                        double cluster = topic_cluster_assignments[t] - 1;
+                        
+                        
+                        
+                        //get current author latent positions (could be updated to run in a loop)
+                        current_author_position[0] = current_latent_positions(0,cluster,document_author);
+                        current_author_position[1] = current_latent_positions(1,cluster,document_author);
+                        
+                        //get current topic betas and intercepts
+                        double current_cluster_intercept = current_intercepts[cluster];
+                        NumericVector current_cluster_betas = betas.row(cluster);
+                        //this calculates the addition to the probability that the token was sampled from the topic by
+                        //adding together edge likelihoods associated with that topic in the document
+                        double additional_edge_probability = 0;
+                        
+                        
+                        for(int a = 0; a < number_of_actors; ++a){
+                            
+                            //no self loops
+                            
+                            if(document_author != a){
+                                
+                                //get whether or not there was an observed edge
+                                int actual_edge = observed_edges(d,a);
+                                //get the edge's current topic assignment
+                                int edge_assignment = edge_topic_assignments(d,a); 
+                                //int edge_assignment = as<int>(get_edge_topic_assignment(document, actor));
+                                if(edge_assignment == topic){
+                                    
+                                    //get current recipient position
+                                    recipient_position[0] = current_latent_positions(0,cluster,a);
+                                    recipient_position[1] = current_latent_positions(1,cluster,a);
+                                    
+                                    //initialize distance
+                                    double distance = 0;
+                                    //calculate distance
+                                    for(int k = 0; k < number_of_latent_dimensions; ++k){
+                                        distance += pow((current_author_position[k] - recipient_position[k]),2);
+                                    }
+                            
+                                    beta_val = 0;
+                                    //pull out the correct beta value 
+                                    for(int c = 0; c < number_of_betas; ++c){
+                                        beta_val += current_cluster_betas[c]*beta_indicator_array(document_author,a,c);
+                                    }
+                                    //calculate linear predictor
+                                    double eta = current_cluster_intercept - pow(distance,.5) + beta_val;
+                            
+                                    double log_prob = 0;
+                                    if(eta < 0){
+                                        if(actual_edge == 1){
+                                            log_prob = eta -log(1 + exp(eta));
+                                        }
+                                        else{
+                                            log_prob = 0 -log(1 + exp(eta));
+                                        }
+                                    }
+                                    else{
+                                        if(actual_edge == 1){
+                                            log_prob = 0 -log(1 + exp(-eta));
+                                        }
+                                        else{
+                                            log_prob = 0 -eta -log(1 + exp(-eta));
+                                        }
+                                    }
+                                    additional_edge_probability += log_prob;
+                                }   
+                            } 
+                        }
+                        
+                        
+                        //now we calculate the first and second terms in the likelihood of of the token being from the current topic
+                        //calculate the number of times a token in the current document has been assigned to the current topic
+                        int ntd = 0;
+                        for(int b = 0; b < number_of_tokens; ++b){
+                            if(b != w){
+                                if(token_topic_assignments1[b] == topic){
+                                    ntd +=1;
+                                }
+                            }
+                        }
+                        
+                        int current_word = token_word_types[w] -1;
+                        //get the number of times this word type has been assigned in the current topic
+                        int wttac = token_type_topic_counts(current_word,t);
+                        //int ntd = as<int>(get_sum_token_topic_assignments(document,token,topic));
+                        //int wttac = as<int>(get_word_type_topic_assignemnt_count(document,token,topic));
+                        
+                        //number of tokens assigned to the topic
+                        int ntt = topic_token_sums[t];
+                        //subtract one from these counts if the current token was assigned to this topic
+                        if(topic == token_topic_assignments1[w]){
+                            ntt -= 1;
+                            wttac -=1;
+                        }
+                        
+                        //helps deal with wierd initializations by no allowing negative counts
+                        if(wttac < 0){
+                            wttac = 0;
+                        }
+                        //int ntt = as<int>(get_number_of_tokens_assigned_to_topic(document,token,topic));
+                        double first_term = ntd + exp(proposed_alpha_m[t]);
+                        double second_term = (wttac + (beta/number_of_word_types))/(ntt + beta);
+                        
+                        //combine terms and add to conditional posterior distribution
+                        Proposed_Alpha_Corpus_Likelihood += (log(first_term) +  log(second_term) + additional_edge_probability);
+                        
+                    }//end of loop over tokens 
+                }//end of document loop
+                
+                //add on because we are working in log space
+                Proposed_Alpha_Corpus_Likelihood += proposed_alpha_m[1];
+                report(Proposed_Alpha_Corpus_Likelihood);
+                
+                // ========== check to see if it is under the curve ======== // 
+                if(Proposed_Alpha_Corpus_Likelihood > slice_probability_floor){
+                    in_slice = 1;
+                }
+                else{
+                    //if the positions we tried were outside of the slice, set them as the new boundary
+                    //get the left and right bounds on the slice for alpha 
+                    for(int t = 0; t < number_of_topics; ++t){
+                            if(proposed_alpha_m[t] < log_alpha_m[t]){
+                                left_proposed_alpha_m[t] = proposed_alpha_m[t];
+                            }
+                            else{
+                                right_proposed_alpha_m[t] = proposed_alpha_m[t];
+                            }
+                    }
+                }   
+            }// end of while checking to see if we are in slice loop
+            
+            //now update
+            for(int t = 0; t < number_of_topics; ++t){
+                //alpha_m[t] = exp(proposed_alpha_m[t]); 
+            }
+            //report(alpha_m);
+        }//end of slice sample every 5 conditional statement
         
         // ===================================================================== //
         // ===================== Adaptive Metropolis Step ====================== //
         // ===================================================================== //
-        if(n > 0){
+        
+        
+        if(n > 0){ // do not update on the first round 
             for(int k = 0; k < number_of_clusters; ++k){
                 double num_accepted = 0;
                 double iters = (double)number_of_MH_itterations;
@@ -520,8 +860,8 @@ List Cluster_Integrated_Sampler(
                 //report(proposal_variance[k]);
             }
             
-            report(proposal_variance);
-            report(cur_accept_rates.row(n));
+            //report(proposal_variance);
+            //report(cur_accept_rates.row(n));
             for(int k = 0; k < number_of_clusters; ++k){
                 cur_proposal_variances(n,k) = proposal_variance[k];
             }
@@ -773,6 +1113,7 @@ List Cluster_Integrated_Sampler(
 
     }// end of main outer itteration loop 
     
+    //report(alpha_m);
     
     to_return[0] = token_topic_assignment_list;
     to_return[1] = topic_present_edge_counts;
@@ -786,6 +1127,7 @@ List Cluster_Integrated_Sampler(
     to_return[9] = number_of_clusters;
     to_return[10] = cur_proposal_variances;
     to_return[11] = cur_accept_rates;
+    to_return[12] = Topic_Model_Likelihoods;
     return to_return;
 }
 
