@@ -19,11 +19,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         #Return_List = Result
         #vocab = vocabulary
         #Thin_Itterations = 1
-        #skip_first=1
+        #skip_first=0
+        first_return <- 13
         Topic_Model_Results <- Return_List[1:5]
-        Model_Parameters <- Return_List[6:10]
-        Cluster_Topic_Assignments <- Return_List[11:(10+Model_Parameters[[2]])]
-        Metropolis_Results <- Return_List[(11+Model_Parameters[[2]]):length(Return_List)]
+        Model_Parameters <- Return_List[6:first_return]
+        Cluster_Topic_Assignments <- Return_List[(first_return+1):(first_return+Model_Parameters[[2]])]
+        Metropolis_Results <- Return_List[(first_return+1+Model_Parameters[[2]]):length(Return_List)]
         #str(Cluster_Topic_Assignments)
         #free up memory
         #rm(Return_List)
@@ -39,8 +40,11 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
 #         to_return[7] = number_of_Gibbs_itterations;
 #         to_return[8] = number_of_MH_itterations;
 #         to_return[9] = number_of_clusters;
-        
-        
+#         to_return[10] = cur_proposal_variances;
+#         to_return[11] = cur_accept_rates;
+#         to_return[12] = Topic_Model_Likelihoods;
+            
+            #plot(Model_Parameters[[8]],ylim = c(-100000, -10000),ylab = "Unnormalized Topic Model Log Likelihood", xlab= "Iteration", pch = 20, col = "blue")
         
         skip_first= skip_first+1
         #remove the first skip_first itterations of each sublist and recombine
