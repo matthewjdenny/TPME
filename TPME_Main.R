@@ -15,7 +15,8 @@ setwd("~/Dropbox/PINLab/Projects/R_Code/TPMNE")
 source("./Scripts/TPME_Run_Analysis.R")
 source("./Scripts/TPME_Run_Cluster_Integrated_Analysis.R")
 source("./Scripts/TPME_Model_Diagnostics.R")
-source("./Scripts/TPME_Take_Sample.R")
+#source("./Scripts/TPME_Take_Sample.R")
+source("./Scripts/TPME_Cluster_Integrated_Take_Final_MH_Sample.R")
 source("./Scripts/TPME_Calculate_Network_Efficiency_Statistics.R")
 
 Report_Probs <- function(current){
@@ -32,15 +33,16 @@ Report_2 <- function(current){
 # 3. Load data: vocab file, document word matrix, document edge matrix and actor covariates
 
 # choose a dataset to work with:
-load("./Data/McDowell_2011_Data.Rdata")
-#load("./Data/New_Hannover_2011_Data.Rdata")
+#load("./Data/McDowell_2011_Data.Rdata")
+load("./Data/New_Hannover_2011_Data.Rdata")
 #load("./Data/Transylvania_2011_Data.Rdata")
 #load("./Data/Columbus_2011_Data.Rdata")
 
 # 4. Run analysis for 50,000 itterations by setting equal to 50
 #Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "Columbus_2011_3-13-14",Base_Alpha =.1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
 
-Result <- Run_Cluster_Integrated_Analysis(Number_Of_Iterations = 100, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Topic_Step_Itterations = 1, Sample_Step_Itterations = 100, output_file = "Columbus_2011_4-18-14",Proposal_Variance = 0.5, system_OS = "Mac", Number_of_Clusters = 10 )
+#Result <- Run_Cluster_Integrated_Analysis(Number_Of_Iterations = 100, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Topic_Step_Itterations = 1, Sample_Step_Itterations = 100, output_file = "Test2",Proposal_Variance = 0.2, system_OS = "Mac", Number_of_Clusters = 8,Itterations_Before_Cluster_Assingment_Updates = 0,TPME_Mode = F )
+
 
 #Model_Accept_Rate <- Run_Analysis(Number_Of_Iterations = 50,Run_Sample_Step = T,output_file = "McDowell_2011_3-13-14",Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50,Proposal_Variance_Vector = c(.5,.1),post_burin_variance = 0.05,Metropolis_Step_Itterations = 1000, system_OS = "Linux", sampler = "Slice", slice_sample_step_size = 1)
 
@@ -55,7 +57,9 @@ Result <- Run_Cluster_Integrated_Analysis(Number_Of_Iterations = 100, Base_Alpha
 
 # 5. Model Diagnostic plots 
 
-#Generate_Model_Diagnsotics(input_file = "Sample_Step_McDowell_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_County_Sample_10_3-13-14", Thin_Itterations = 1,skip_first = 2000)
+Generate_Model_Diagnsotics(input_file = "New_Hannover_2011_5-20-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "New_Hannover_2011_5-21-14", Thin_Itterations = 1,skip_first = 600,Cluster_Integrated = T)
+
+
 
 #Generate_Model_Diagnsotics(input_file = "Sample_Step_Transylvania_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Transylvania_County_Sample_10_3-13-14", Thin_Itterations = 1,skip_first = 10000)
 
@@ -73,14 +77,14 @@ Result <- Run_Cluster_Integrated_Analysis(Number_Of_Iterations = 100, Base_Alpha
 #Generate_Model_Diagnsotics(input_file = "Transylvania_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "Transylvania_50M_3-13-14", Thin_Itterations = 1,skip_first = 40200)
 
 
-Generate_Model_Diagnsotics(input_file = "McDowell_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_50M_3-13-14", Thin_Itterations = 1,skip_first = 7000)
+#Generate_Model_Diagnsotics(input_file = "McDowell_Sample_50M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_50M_3-13-14", Thin_Itterations = 1,skip_first = 7000)
 
 #Generate_Model_Diagnsotics(input_file = "McDowell_Slice_2M_2011_3-13-14",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", vocab = vocabulary,county_name = "McDowell_2M_slice_3-13-14", Thin_Itterations = 1,skip_first = 6200)
 
 
 #5 run additional sample steps:
 
-#Run_Sample_Step(input_file = "Current_Itteration_McDowell_2011_3-13-14",data_source = "McDowell_2011_Data", output_file = "McDowell_Slice_2M_2011_3-13-14", itterations = 2050000, proposal_variance = 0.25,sample_every = 200,sample_step_burnin = 50000,post_burin_variance = 0.2, system_OS = "Linux", sampler = "Block", slice_sample_step_size = 1,post_burnin_step_size = 0.5)
+Run_Sample_Step(input_file = "Model_Output_New_Hannover_2011_4-30-14",data_source = "New_Hannover_2011_Data", output_file = "New_Hannover_2011_5-17-14", data_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",sample_step_burnin = 200000,itterations = 10200000,sample_every = 2000,post_burin_variance_multiplier = 0.5, system_OS = "Linux", max_cpus = 20)
 
 #Run_Sample_Step(input_file = "Current_Itteration_Columbus_2011_3-13-14",data_source = "Columbus_2011_Data", output_file = "Columbus_Slice_2M_2011_3-13-14", itterations = 2050000, proposal_variance = 0.1,sample_every = 200,sample_step_burnin = 50000,post_burin_variance = 0.02, system_OS = "Linux", sampler = "Block", slice_sample_step_size = 1,post_burnin_step_size = 0.5)
 
