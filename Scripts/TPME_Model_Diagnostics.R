@@ -1,5 +1,5 @@
 
-Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 2, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1, vocab = vocabulary,county_name = "McDowell_County",skip_first = 0, Cluster_Integrated = T){
+Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", input_file = "Test",LS_Actor = 8, out_directory = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/",Thin_Itterations = 1, vocab = vocabulary,county_name = "Testing",skip_first = 0, Cluster_Integrated = T){
     #load current results
     #load("Current_Itteration_Results.Rdata")
     #for testing load("~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/Transylvania_Sample_10M_2011_3-13-14.Rdata")
@@ -19,11 +19,12 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         #Return_List = Result
         #vocab = vocabulary
         #Thin_Itterations = 1
-        #skip_first=0
+        #skip_first=2000
         first_return <- 13
         Topic_Model_Results <- Return_List[1:5]
         Model_Parameters <- Return_List[6:first_return]
         Cluster_Topic_Assignments <- Return_List[(first_return+1):(first_return+Model_Parameters[[2]])]
+        Last_Cluster_Topic_Assignments <- unlist(Cluster_Topic_Assignments[Model_Parameters[[2]]])
         Metropolis_Results <- Return_List[(first_return+1+Model_Parameters[[2]]):length(Return_List)]
         #str(Cluster_Topic_Assignments)
         #free up memory
@@ -44,7 +45,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
 #         to_return[11] = cur_accept_rates;
 #         to_return[12] = Topic_Model_Likelihoods;
             
-            #plot(Model_Parameters[[8]],ylim = c(-100000, -10000),ylab = "Unnormalized Topic Model Log Likelihood", xlab= "Iteration", pch = 20, col = "blue")
+            #plot(Model_Parameters[[8]],ylim = c(-6000, -3800),ylab = "Unnormalized Topic Model Log Likelihood", xlab= "Iteration", pch = 20, col = "blue")
         
         skip_first= skip_first+1
         #remove the first skip_first itterations of each sublist and recombine
@@ -56,6 +57,8 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         temp <- append(temp,Metropolis_Results[(4*Itterations+skip_first):(5*Itterations)])
         temp <- append(temp,Metropolis_Results[(5*Itterations+skip_first):(6*Itterations)])
         Metropolis_Results <- temp
+
+        Itterations <- Model_Parameters[[4]] - skip_first +1
         
         #thin out the data by taking every Thin_Itterations itteration for the metropolis step
         Metropolis_Results <- Metropolis_Results[seq(1, length(Metropolis_Results),Thin_Itterations)]
@@ -63,6 +66,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         #get model information and extract data
         Latent_Spaces <- length(Metropolis_Results[[(Itterations + 1)]][,1,1])
         Clusters <- length(Metropolis_Results[[1]])
+        #Clusters <- 2
         Topics <- length(Cluster_Topic_Assignments[[1]])
         Actors <- length(Metropolis_Results[[(Itterations + 1)]][1,1,])
         Token_Topic_Assignments <- Topic_Model_Results[[1]]
@@ -70,7 +74,8 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         Topic_Absent_Edge_Counts <- Topic_Model_Results[[3]]
         Word_Type_Topic_Counts <- Topic_Model_Results[[4]]
         Edge_Topic_Assignments <- Topic_Model_Results[[5]]
-        
+        Proposal_Variances <- Model_Parameters[[6]][Model_Parameters[[2]],]
+        Cluster_Topic_Assigns <- Cluster_Topic_Assignments[[Model_Parameters[[2]]]]
         
         #get the total number of tokens assigned to each topic
         Topic_Token_Totals <- apply(Word_Type_Topic_Counts,2,sum)
@@ -106,7 +111,54 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             Top_Ten_Words[i] <- words
             Top_Four_Words[i] <- words4
         }
+        data <- list(Top_Four_Words,Cluster_Topic_Assigns)
+        save(data,file=paste(out_directory ,county_name,"Topic_Top_Words.Rdata", sep = ""))
+        #print out the top words for each topic in each cluster
+        for(i in 1:Clusters){
+            print(i)
+            inds <- which(data[[2]] == i)
+            print(data[[1]][inds])
+        }
+
+
+
+
+        #this list will be used to store lists of three vectors: word indicies in descending order of likelihood, word probability in topic, actual word. 
+        Cluster_Top_Words <- list()
+        Cluster_Ten_Words <- rep("",Clusters)
+        Cluster_Four_Words <- rep("",Clusters)
         
+        for(k in 1:Clusters){
+            
+            probabilities <- rep(0,length(Word_Type_Topic_Counts[,1]))
+            for(i in 1:Topics){
+                if(Cluster_Topic_Assigns[i] == k){
+                    probabilities <- probabilities + Word_Type_Topic_Counts[,i]
+                }
+            }
+            #reduce to only words with non-zero probability
+            indicies <- order(probabilities,decreasing = TRUE)
+            indicies <- indicies[which(probabilities > 0)]
+            probabilities <- probabilities[which(probabilities > 0)]
+            top_words <- vocab[indicies,]
+            Cluster_List <- list(top_words,probabilities,indicies)
+            Cluster_Top_Words <- append(Cluster_Top_Words,list(Cluster_List))
+            #add top words
+            words <- ""
+            words4 <- ""
+            for(j in 1:5){
+                words <- paste(words,top_words[j],", ",sep = "")
+            }
+            words <- paste(words," \n",sep = "")
+            for(j in 6:10){
+                words <- paste(words,top_words[j],", ",sep = "")
+            }
+            for(j in 1:4){
+                words4 <- paste(words4,top_words[j],", ",sep = "")
+            }
+            Cluster_Ten_Words[k] <- words
+            Cluster_Four_Words[k] <- words4
+        }
         
         
         
@@ -154,11 +206,58 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             corel <- cor(LSP[,1], LSP[,2])
             matplot(LSP, main = paste("Topic:",topic, "\n LS Correlations:", round(corel,3),"\n Geweke - LS1:",round(geweke.diag(LSP[,1])$z,2),"LS2:",round(geweke.diag(LSP[,2])$z,2)),ylab= "Value",pch = 20)
         }
-        plot_Topic_Network <- function(topic){
-            slice <- Topic_Present_Edge_Counts[,,topic]
-            coordinates <- cbind(Metropolis_Results[[Itterations]][1,topic,],Metropolis_Results[[Itterations]][2,topic,])
+
+
+        plot_Cluster_present_edge_Network <- function(Cluster){
+            #get all topics assigned to cluster
+            cluster_indexes <- which(Last_Cluster_Topic_Assignments == Cluster)
+            #create matrix to add to
+            slice <- matrix(0, Actors,Actors)
+            if(length(cluster_indexes) > 0){
+                for(i in cluster_indexes){
+                    slice <- slice + Topic_Present_Edge_Counts[,,i]
+                }
+            }
+            coordinates <- cbind(Metropolis_Results[[2*Itterations]][1,Cluster,],Metropolis_Results[[2*Itterations]][2,Cluster,])
             coordinates <- as.data.frame(coordinates)
-            plot(coordinates,main = paste("Topic:",topic,"Number of Edges:",sum(slice),"\n", Top_Four_Words[topic]),pch = 20, col = "red")
+            
+            gend <- Author_Attributes$Gender
+            colors <- rep("", length(gend))
+            for(l in 1:length(gend)){
+                if(gend[l] == "M"){
+                    colors[l] <- "purple"
+                }else{
+                    colors[l] <- "orange"
+                }
+            }
+            
+            plot(coordinates,main = paste("Topic:",Cluster,"Number of Edges:",sum(slice),"\n", Cluster_Ten_Words[Cluster]),pch = 20, col = "red")
+            #add in lines between actors
+            for(i in 1:Actors){
+                for(j in 1:Actors){
+                    if(slice[i,j] >0){
+                        lines(c(coordinates[i,1],coordinates[j,1]) , c(coordinates[i,2],coordinates[j,2]), col = "black")
+                    }
+                }
+            }
+            points(coordinates,col = colors, pch = 19, cex = 2)
+            
+        }
+
+
+        plot_Cluster_absent_edge_Network <- function(Cluster){
+            #get all topics assigned to cluster
+            cluster_indexes <- which(Last_Cluster_Topic_Assignments == Cluster)
+            #create matrix to add to
+            slice <- matrix(0, Actors,Actors)
+            if(length(cluster_indexes) > 0){
+                for(i in cluster_indexes){
+                    slice <- slice + Topic_Absent_Edge_Counts[,,i]
+                }
+            }
+            coordinates <- cbind(Metropolis_Results[[2*Itterations]][1,Cluster,],Metropolis_Results[[2*Itterations]][2,Cluster,])
+            coordinates <- as.data.frame(coordinates)
+            plot(coordinates,main = paste("Topic:",Cluster,"Number of Edges:",sum(slice),"\n", Cluster_Four_Words[Cluster]),pch = 20, col = "red")
             #add in lines between actors
             for(i in 1:Actors){
                 for(j in 1:Actors){
@@ -175,7 +274,7 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             slice <- Topic_Present_Edge_Counts[,,topic]
             coordinates <- cbind(Metropolis_Results[[Itterations]][1,topic,],Metropolis_Results[[Itterations]][2,topic,])
             coordinates <- as.data.frame(coordinates)
-            plot(coordinates,main = paste("Topic:",topic,"Number of Edges:",sum(slice),"\n", Top_Ten_Words[topic]),pch = 20, col = "red")
+            plot(coordinates,main = paste("Topic:",topic,"Number of Edges:",sum(slice),"\n", Cluster_Ten_Words[topic]),pch = 20, col = "red")
             #add in lines between actors
             for(i in 1:Actors){
                 for(j in 1:Actors){
@@ -283,17 +382,22 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
             sapply(1:Clusters,plot_likelihoods) 
             dev.off()
             
-#             #generate network plots one per page
-#             print("Plotting Networks...")
-#             pdf(file=paste(out_directory,county_name,"_Network_Plots_Full_Page.pdf",sep = ""), width = Width, height = Height)
-#             par(mfrow= c(1,1))
-#             sapply(1:Clusters,plot_Topic_Network_Full)
-#             dev.off()
+            #generate network plots one per page
+            print("Plotting Networks...")
+            pdf(file=paste(out_directory,county_name,"_Cluster_Absent_Edge_Networks.pdf",sep = ""), width = Width, height = Height)
+            par(mfrow= c(parrow,parcol))
+            sapply(1:Clusters,plot_Cluster_absent_edge_Network)
+            dev.off()
+
+            pdf(file=paste(out_directory,county_name,"_Cluster_Present_Edge_Networks.pdf",sep = ""), width = Width, height = Height)
+            par(mfrow= c(parrow,parcol))
+            sapply(1:Clusters,plot_Cluster_present_edge_Network)
+            dev.off()
             
             
             #generate network plots
             print("Plotting Beta Estimates...")
-            pdf(file=paste(out_directory,county_name,"_Beta_Estimates.pdf",sep = ""), width = Width, height = Height)
+            pdf(file=paste(out_directory,county_name,"_Beta_Estimates.pdf",sep = ""), width = Width, height = 5)
             par(mfrow= c(parrow,parcol))
             plots <- sapply(1:Clusters,plot_beta_estimates)
             #for(j in 1:length(plots)){
@@ -518,7 +622,15 @@ Generate_Model_Diagnsotics <- function(input_folder_path = "~/Dropbox/PINLab/Pro
         for(i in 1:Topics){
             probs[i,] <- Word_Type_Topic_Counts[,i]/Topic_Token_Totals[i] 
         }
-        topic_data <- cbind(Clusters_intercepts,topic_average_distances,beta_averages,beta_se,transpose,probs)
+        #now combine over topic in cluster
+        probs2 <- matrix(0, ncol = num_words, nrow = Clusters)
+        for(j in 1:Topics){
+            clust <- Cluster_Topic_Assigns[j]
+            probs2[clust,] <- probs2[clust,] + probs[j,]
+        }
+            
+
+        topic_data <- cbind(Clusters_intercepts,topic_average_distances,beta_averages,beta_se,transpose,probs2)
         topic_data <- as.data.frame(topic_data)
         
         prob_vocab <- as.vector(vocab[,1])
