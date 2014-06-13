@@ -4,6 +4,47 @@
 # user defined functions are in all caps
 
 
+# Number_Of_Iterations = 100
+# Base_Alpha =1
+# Base_Beta = 0.01
+# Number_Of_Topics = 50
+# Author_Attributes= author_attributes
+# Document_Edge_Matrix = document_edge_matrix 
+# Document_Word_Matrix = document_word_matrix
+# Vocabulary = vocabulary
+# Latent_Dimensions = 2
+# Topic_Step_Itterations = 1
+# Sample_Step_Itterations = 100
+# output_file = "Test"
+# Proposal_Variance = 0.5
+# seed = 1234
+# output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/"
+# system_OS = "Linux"
+# Number_of_Clusters = 9
+# Itterations_Before_Cluster_Assingment_Updates = 1
+# Adaptive_Metropolis_Target_Accept_Rate = 0.2
+# slice_sample_alpha_step_size = 1
+# TPME_Mode = F
+
+
+
+
+
+
+
+
+#Test()
+
+
+
+
+
+
+
+
+
+
+
 Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Alpha =1, Base_Beta = 0.01, Number_Of_Topics = 50, Author_Attributes= author_attributes, Document_Edge_Matrix = document_edge_matrix ,Document_Word_Matrix = document_word_matrix, Vocabulary = vocabulary, Latent_Dimensions = 2, Topic_Step_Itterations = 1, Sample_Step_Itterations = 10, output_file = "Test",Proposal_Variance = 0.5, seed = 1234, output_folder_path = "~/Dropbox/PINLab/Projects/Denny_Working_Directory/2011_Analysis_Output/", system_OS = "Linux", Number_of_Clusters = 10,Itterations_Before_Cluster_Assingment_Updates = 5, Adaptive_Metropolis_Target_Accept_Rate = 0.3, slice_sample_alpha_step_size = 1,TPME_Mode = F){
     
     #================ set working driectory and source all functions ====================#
@@ -14,6 +55,7 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
     #if we are running linux then we need to add the appropriate c flags to use c++2011
     if(system_OS == "Linux"){
         #PKG_CPPFLAGS = "-std=c++11"
+        #PKG_CPPFLAGS = "-std=c++0x -Wall"
         PKG_CPPFLAGS = "-std=c++0x"
         Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
     }
@@ -156,14 +198,14 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
         }
     }
     
-    
+    print("Running Model...")
     #==================== MAIN Function ====================#                             
         
         Return_List <- Cluster_Integrated_Sampler(
             Number_Of_Iterations,
             Topic_Step_Itterations,
             Sample_Step_Itterations,
-            Number_Of_Authors, 
+            as.integer(Number_Of_Authors), 
             Number_Of_Topics,
             Number_of_Clusters,
             Latent_Dimensions,
@@ -187,7 +229,7 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
             as.matrix(Edge_Topic_Assignments),
             Word_Type_Topic_Counts,
             apply(Word_Type_Topic_Counts,2,sum),
-            Number_Of_Words,
+            as.integer(Number_Of_Words),
             Itterations_Before_Cluster_Assingment_Updates,
             Adaptive_Metropolis_Target_Accept_Rate,
             slice_sample_alpha_step_size
