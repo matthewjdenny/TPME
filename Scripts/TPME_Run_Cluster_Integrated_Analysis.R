@@ -59,7 +59,8 @@ Run_Cluster_Integrated_Analysis <- function(Number_Of_Iterations = 1000, Base_Al
         PKG_CPPFLAGS = "-std=c++0x"
         Sys.setenv(PKG_CPPFLAGS = PKG_CPPFLAGS)
     }
-    Rcpp::sourceCpp("./Scripts/TPME_Cluster_Integrated_Sampler.cpp")
+    #Rcpp::sourceCpp("./Scripts/TPME_Cluster_Integrated_Sampler.cpp")
+    Rcpp::sourceCpp('./Scripts/TPME_Final_Sampler.cpp')
     print("Source Files Loaded...")
     
     #================= Initialize all variables, latent spaces edge assingments and topic assignments ==============#
